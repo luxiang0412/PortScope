@@ -196,10 +196,12 @@ only by comparison tests.
 | ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1** | see `exec.rs` |
 | Full-collection latency (7–8 s) | **open, Phase 2** | P1-D1; blocks 5 s auto-refresh |
 | ~~GUI real-data path~~ | **DONE in Phase 2** | real `collect()` wired via worker thread |
+| ~~Settings page (§5.7)~~ | **DONE** | language, auto-refresh, privacy scope, About |
 | ~~1024×600 layout~~ | **DONE in Phase 2** | narrow layout + hidden secondary columns |
-| Filter / sort widgets | **absent** | `EndpointFilter` tested in `state`, **not wired to UI** |
+| ~~Filter / sort widgets~~ | **DONE** | toolbar: protocol / family / unknown-owner + sort column & direction |
 | Stale / failure screenshots | **not captured** | logic unit-tested; needs an induced failure |
-| In-app language switch | **not screenshot-verified** | implemented + unit-tested; startup language verified |
+| ~~In-app language switch~~ | **DONE + verified** | switch updates main *and* settings window; `language=zh_CN` survives restart |
+| Log level filter / single-entry copy | **absent** | §5.6 requires both |
 
 ---
 
