@@ -197,7 +197,8 @@ only by comparison tests.
 | README / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT | **DONE** | |
 | CI pipeline | **DONE** (unrun) | `.github/workflows/ci.yml`, 3 jobs; steps reproduced locally from a clean clone |
 | **`.deb` package** | **DONE** | lintian-clean apart from `initial-upload-closes-no-bugs`; installed and run from `/usr/bin`; byte-reproducible |
-| `.rpm` / Flatpak | **absent** | remaining |
+| **`.rpm` package** | **DONE** | installs in an isolated root, binary runs, reproducible; needs glibc 2.39 (Fedora 40+/Debian 13). Not validated on a real Fedora host |
+| **Flatpak** | **REJECTED with evidence** | `flatpak run` forces PID isolation, so owner association cannot work; see `docs/FLATPAK-EVALUATION.md` |
 | `libc6 >= 2.39` floor | **limitation** | Debian 12 cannot install this build; per-release builds needed |
 | metainfo homepage URL | **missing** | no public repository yet; `url-homepage-missing` warning |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |

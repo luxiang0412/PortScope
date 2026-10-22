@@ -1,0 +1,123 @@
+# Phase 6 — RPM build verification
+
+Host: Ubuntu 24.04.5 (not a Fedora host). `rpm` / `rpmbuild` 4.18.2 installed via
+`apt install rpm`.
+
+## Build
+
+```
+$ ./scripts/build-rpm.sh
+==> Creating source tarball
+==> Building RPM
+NOTE: not a Fedora build host; skipping BuildRequires check (--nodeps).
+      The resulting RPM links against this host's glibc and is NOT a
+      substitute for a Fedora-built package.
+Built: dist/portscope-0.1.0-1.x86_64.rpm
+```
+
+## Metadata
+
+```
+Name        : portscope
+Version     : 0.1.0
+Release     : 1
+Architecture: x86_64
+Group       : Unspecified
+Size        : 2141001
+License     : MIT
+Build Host  : reproducible
+```
+
+Dependencies (explicit part):
+
+```
+gtk4 >= 4.14
+libadwaita >= 1.5
+```
+
+plus rpm's automatically generated soname requirements
+(`libgtk-4.so.1()(64bit)`, `libadwaita-1.so.0()(64bit)`, `libc.so.6(GLIBC_...)`).
+
+The explicit `gtk4 >= 4.14` / `libadwaita >= 1.5` floors are needed because the
+crates are compiled with the `v4_14` / `v1_5` feature gates; the generated
+soname requirements alone would not stop installation on a system where the
+binary cannot run.
+
+`iproute` and `systemd` are **Recommends**, not Requires: PortScope starts
+without them and reports the missing tool instead of refusing to install.
+
+## Contents
+
+```
+/usr/bin/portscope
+/usr/bin/portscope-cli
+/usr/share/applications/io.github.portscope.app.desktop
+/usr/share/metainfo/io.github.portscope.app.metainfo.xml
+/usr/share/icons/hicolor/{16,24,32,48,64,128,256}x*/apps/io.github.portscope.app.png
+/usr/share/icons/hicolor/scalable/apps/io.github.portscope.app.svg
+/usr/share/man/man1/portscope.1.gz
+/usr/share/man/man1/portscope-cli.1.gz
+/usr/share/locale/zh_CN/LC_MESSAGES/portscope.mo
+/usr/share/doc/portscope-0.1.0/README.md
+/usr/share/licenses/portscope-0.1.0/LICENSE
+```
+
+File modes are 0755 for binaries and 0644 for data, as recorded by rpm.
+
+## Install test (isolated rpm root)
+
+```
+$ rpm --root /tmp/rpmroot --initdb
+$ rpm --root /tmp/rpmroot -i --nodeps --noscripts dist/portscope-0.1.0-1.x86_64.rpm
+$ /tmp/rpmroot/usr/bin/portscope-cli snapshot
+endpoints=140 processes=225 services=363 associations=2021 duration=1221ms
+```
+
+The packaged binary runs and collects real data.
+
+## Reproducibility
+
+Two builds made after the fixes are byte-identical:
+
+```
+44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  build 1
+44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  build 2
+```
+
+And identical when built from an independent checkout:
+
+```
+44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  main repo
+44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  clean clone
+```
+
+It took three attempts. Findings:
+
+1. The first builds differed. The **payload binaries were byte-identical**; only
+   the header varied (`BUILDTIME` 1792652996 vs 1792653080).
+2. `SOURCE_DATE_EPOCH` alone was not enough: rpmbuild only uses it for
+   `BUILDTIME` when `_use_source_date_epoch_as_buildtime` is defined.
+3. `BUILDHOST` was also stamped with the machine name; pinned to `reproducible`.
+
+The .deb remains reproducible after these changes (verified: same sha256 from
+both checkouts).
+
+## Stated limitations
+
+- **Not a Fedora build.** BuildRequires cannot be evaluated here (the Fedora
+  package names are absent from Ubuntu's rpm database), so the build runs with
+  `--nodeps` and says so. A Fedora-targeted RPM must be built on Fedora, which
+  is what CI is for.
+- **GLIBC_2.39 is required** (highest GLIBC version referenced):
+
+  | Distribution | glibc | Installs |
+  | --- | --- | --- |
+  | Fedora 40 | 2.39 | yes |
+  | Fedora 41 | 2.40 | yes |
+  | Debian 13 | 2.41 | yes (expected) |
+  | Ubuntu 24.04 | 2.39 | yes |
+  | Debian 12 | 2.36 | **no** |
+
+- **Not tested on a real Fedora system.** The isolated-root install proves the
+  package is well-formed and its binary works, not that dependency resolution
+  succeeds on Fedora. That requires a Fedora host or CI runner.

@@ -110,7 +110,44 @@ build differs.
 **lintian** reports one warning: `initial-upload-closes-no-bugs`. That is
 expected for a first upload with no upstream bug tracker.
 
-## 3b. Install/uninstall scripts — implemented and verified
+## 3b. RPM package — implemented and verified (with stated limits)
+
+```bash
+sudo apt install rpm          # Debian/Ubuntu build host
+./scripts/build-rpm.sh        # -> dist/portscope-<version>-<release>.<arch>.rpm
+```
+
+Verified: builds, installs into an isolated rpm root, and the packaged binary
+runs (140 endpoints / 225 processes / 363 services). Reproducible — identical
+sha256 across two builds **and** across two independent checkouts. Evidence:
+`evidence/logs/phase6-rpm-verify.log`.
+
+Dependencies: `gtk4 >= 4.14` and `libadwaita >= 1.5` declared explicitly (the
+crates use the `v4_14` / `v1_5` gates) plus rpm's generated soname requirements.
+`iproute` / `systemd` are only Recommends.
+
+**Limits, stated in the script output as well as here:**
+
+- Built on Ubuntu, so it links against glibc 2.39. It needs `GLIBC_2.39`:
+  Fedora 40+, Debian 13 and Ubuntu 24.04 are fine; **Debian 12 is not**.
+- A **Fedora-targeted** RPM must be built on Fedora. The `BuildRequires` cannot
+  even be evaluated here, so the build runs with `--nodeps` and says so. CI is
+  the right place for that.
+- Not tested on a real Fedora system; only the isolated-root install was done.
+
+## 3c. Flatpak — evaluated and rejected
+
+See [`FLATPAK-EVALUATION.md`](FLATPAK-EVALUATION.md). Summary: `flatpak run`
+always unshares the PID namespace and this cannot be disabled, so inside a
+sandbox `ss -p` reports no PIDs, `cgroup.procs` yields host PIDs that do not
+exist in the sandbox, and `/proc/<pid>` is absent. PortScope would list ports but
+never link one to a process or service, while holding host `/proc`, `/sys`,
+network and system D-Bus access. That is no sandbox and no feature.
+
+Revisiting it would require a host-side helper with a narrow D-Bus API, which is
+a new component explicitly out of scope for v1.0.
+
+## 3d. Install/uninstall scripts — implemented and verified
 
 `scripts/install.sh` / `scripts/uninstall.sh` install into `~/.local` by default
 and need **no root**, matching the unprivileged model. Verified from a clean
