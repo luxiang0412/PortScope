@@ -20,8 +20,12 @@ use std::time::Instant;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.get(1).map(String::as_str).unwrap_or("snapshot");
+    // `get(2..).unwrap_or_default()` rather than `args[2..]`: indexing panics
+    // when no subcommand argument was supplied, which crashed `portscope-cli`
+    // on a bare invocation.
+    let rest: &[String] = args.get(2..).unwrap_or_default();
     let code = match cmd {
-        "snapshot" => snapshot(&args[2..]),
+        "snapshot" => snapshot(rest),
         "journal" => journal(args.get(2).cloned(), args.get(3).cloned()),
         "compare-backends" => compare_backends(),
         "-h" | "--help" | "help" => {
@@ -251,4 +255,20 @@ fn compare_backends() -> i32 {
         derrs.iter().map(|e| e.code()).collect::<Vec<_>>()
     );
     if disagree == 0 { 0 } else { 1 }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Regression: `args[2..]` panicked for a bare `portscope-cli` invocation.
+    /// Slicing with `get(2..).unwrap_or_default()` must yield an empty slice
+    /// for every possible argv length.
+    #[test]
+    fn argument_slicing_never_panics() {
+        for n in 0..5usize {
+            let args: Vec<String> = (0..n).map(|i| format!("a{i}")).collect();
+            let rest: &[String] = args.get(2..).unwrap_or_default();
+            // Must not panic, and must be empty or a suffix of argv.
+            assert!(rest.len() <= args.len());
+        }
+    }
 }

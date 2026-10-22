@@ -28,7 +28,7 @@ product owner review before Phase 3 starts.**
 
 | Check | Result |
 | --- | --- |
-| `cargo test -- --test-threads=1` | **61 core + 14 integration + 48 gtk = 123 passed, 0 failed, 0 skipped** |
+| `cargo test -- --test-threads=1` | **61 core + 14 integration + 48 gtk + 1 cli = 124 passed, 0 failed, 0 skipped** |
 | `cargo fmt --all --check` | clean |
 | `cargo clippy --workspace --all-targets -- -D warnings` | clean |
 | Real data in GUI | **yes** — 142 endpoints / 114 processes / 346 services from the live system |
@@ -155,7 +155,7 @@ only by comparison tests.
 | --- | --- | --- |
 | Debian 13 | **unverified** | no real host/VM available. Taskbook §9.1 makes it a release gate. |
 | Wayland | **unverified** | session is X11 `:1`. Taskbook §9.2 release gate. |
-| Non-`adm` user, full GUI run | **unverified** | only `nobody` *collection* probes exist. Test user is in `adm`. |
+| ~~Non-`adm` user, full GUI run~~ | **VERIFIED in Phase 2** | ran as `ps_user` (uid 1001, groups: only its own). 141 endpoints / 244 services collected, GUI fully usable, permission limits shown honestly. See `evidence/logs/phase2-nonroot-user.log` and `phase2-nonroot-user-1400.png`. |
 | Fractional scaling 125 % / 175 % | **unverified** | session offers 100/200 % + text scaling. |
 | `hidepid=2` | **unverified** on a real host | code treats `/proc` reads as failable, but no `hidepid=2` host was tested. |
 | gettext `.po` catalogue | **absent** | Spike used typed string tables; Phase 3 must produce `.po`. |

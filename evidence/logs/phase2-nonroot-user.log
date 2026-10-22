@@ -1,0 +1,15 @@
+# 普通用户（无 sudo / 无 adm）运行验证 — 2026-10-22T11:40:06+08:00
+
+## 测试用户
+uid=1001(ps_user) gid=1001(ps_user) groups=1001(ps_user)
+
+## CLI 采集（无提权）
+== PortScope snapshot ==
+collected_at = Some(SystemTime { tv_sec: 1792640406, tv_nsec: 584139978 })
+duration_ms  = 907.7
+endpoints    = 141
+processes    = 99
+services     = 244
+associations = 138
+degraded     = true
+

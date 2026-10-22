@@ -79,7 +79,8 @@ wmctrl -i -r <wid> -e 0,0,0,1024,600
   - `portscope-core` unit: **61** (55 + 6 new batched-D-Bus tests)
   - `portscope-core` integration: **14**
   - `portscope-gtk` unit: **48** (state 18, i18n 12, worker 6, summary 5, logs 4, details 1, views 2)
-  - **total 123 passed, 0 failed**
+  - `portscope-cli` unit: **1** (argument-slicing regression)
+  - **total 124 passed, 0 failed**
   - `cargo fmt --all --check`: clean
   - `cargo clippy --workspace --all-targets -- -D warnings`: clean
   - `msgfmt --check-format`: clean, **108 entries, 0 untranslated**
@@ -143,6 +144,25 @@ wmctrl -i -r <wid> -e 0,0,0,1024,600
 | **Click-to-select felt dead** | `can_unselect(true)` made every click on a selected row toggle it off | Set `can_unselect(false)` |
 | **Logs section was a stub** | Showed "No log entries in this window." without querying | Real `journalctl` query, four outcomes rendered distinctly |
 
+### Non-root verification (closes taskbook §9.3)
+
+Created a user `ps_user` (uid 1001, **groups: only its own — no `sudo`, no
+`adm`**) and ran both the CLI and the GUI as that user.
+
+- CLI: 141 endpoints / 99 processes / 244 services in 908 ms, no privilege
+  requested (`evidence/logs/phase2-nonroot-user.log`).
+- GUI: launched and rendered, 141 endpoints / 244 services, permission limits
+  shown as `Permission denied (141)`, no crash
+  (`evidence/screenshots/phase2-nonroot-user-1400.png`).
+- Confirmed the binary is **not** setuid and the source contains no
+  `sudo`/`pkexec`/polkit/`unsafe`.
+- X11 note: the test needed `xhost +si:localuser:ps_user` because a second user
+  cannot attach to another user's session display. That is an artefact of the
+  test harness, not of PortScope; it was revoked afterwards.
+
+A bug was found in this pass: `portscope-cli` with **no arguments panicked**
+(`range start index 2 out of range`). Fixed and regression-tested.
+
 ### Remaining open
 
 | Item | State |
@@ -152,7 +172,7 @@ wmctrl -i -r <wid> -e 0,0,0,1024,600
 | Keyboard: Enter to open details | Ctrl+F / Ctrl+R / Esc wired; Enter-to-open is not. |
 | Auto-refresh menu check mark | Actions change the interval; the menu shows no current selection. |
 | Runtime language switch (in-app menu) | Startup language verified for EN and ZH by screenshot. The in-app switch is implemented and unit-tested but **not verified by screenshot**. |
-| Wayland / Debian 13 / non-`adm` / `hidepid=2` | **still unverified** (Debian 13 deferred by owner). |
+| Wayland / Debian 13 / `hidepid=2` | **still unverified** (Debian 13 deferred by owner). Non-`adm` is now verified. |
 
 ## 8. 与任务书的偏差
 

@@ -31,10 +31,15 @@ use crate::state::{AppState, View};
 use crate::worker::{Collector, Outcome, is_current};
 use crate::{APP_ID, APP_VERSION};
 
-/// Below this width the details pane becomes a separate page instead of taking
-/// table width. 1024×600 CSS (the compact acceptance target) uses the narrow
-/// layout; 1366×768 uses the wide one.
-pub const NARROW_BREAKPOINT: i32 = 1100;
+/// Below this **window** width the details pane becomes a separate page instead
+/// of taking table width.
+///
+/// The number is derived, not guessed: in the wide layout the details pane takes
+/// ~360 px, so the table gets `width - 360`. The Ports table needs roughly
+/// 1 040 px to show its six primary columns without clipping. Keeping
+/// `width - 360 >= 1 040` gives a breakpoint of ~1 400 px; anything narrower
+/// uses the page layout, where the table gets the whole width.
+pub const NARROW_BREAKPOINT: i32 = 1400;
 
 /// Minimum width the table is guaranteed in the wide layout.
 const MIN_TABLE_WIDTH: i32 = 480;
