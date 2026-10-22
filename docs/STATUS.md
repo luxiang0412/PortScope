@@ -189,16 +189,16 @@ only by comparison tests.
 | Wayland | **unverified** | session is X11 `:1`. Taskbook §9.2 release gate. |
 | ~~Non-`adm` user, full GUI run~~ | **VERIFIED in Phase 2** | ran as `ps_user` (uid 1001, groups: only its own). 141 endpoints / 244 services collected, GUI fully usable, permission limits shown honestly. See `evidence/logs/phase2-nonroot-user.log` and `phase2-nonroot-user-1400.png`. |
 | Fractional scaling 125 % / 175 % | **unverified** | session offers 100/200 % + text scaling. |
-| `hidepid=2` | **unverified** on a real host | code treats `/proc` reads as failable, but no `hidepid=2` host was tested. |
+| ~~`hidepid=2`~~ | **VERIFIED** | real reversible remount (`hidepid=invisible`); degrades correctly, services still associated, no crash. See `phase5-hidepid-verify.log` |
 | ~~gettext `.po` catalogue~~ | **DONE** | 113 entries, 0 untranslated, `msgfmt --check-format` clean |
 | LICENSE | **DONE** | MIT (`LICENSE`, `license` field in every crate) |
 | Desktop entry, metainfo, icon set | **DONE** | validated; installed and launched from a clean clone |
 | Install / uninstall scripts | **DONE** | unprivileged (~/.local); verified end to end |
 | README / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT | **DONE** | |
-| CI pipeline | **DONE** (unrun) | `.github/workflows/ci.yml`, 3 jobs; steps reproduced locally from a clean clone |
+| CI pipeline | **DONE** (unrun) | `.github/workflows/ci.yml`, 4 jobs (test, translations, packages, metadata); every step reproduced locally |
 | **`.deb` package** | **DONE** | lintian-clean apart from `initial-upload-closes-no-bugs`; installed and run from `/usr/bin`; byte-reproducible |
 | **`.rpm` package** | **DONE** | installs in an isolated root, binary runs, reproducible; needs glibc 2.39 (Fedora 40+/Debian 13). Not validated on a real Fedora host |
-| **Flatpak** | **REJECTED with evidence** | `flatpak run` forces PID isolation, so owner association cannot work; see `docs/FLATPAK-EVALUATION.md` |
+| **Flatpak** | **REJECTED with evidence** | `flatpak run` forces PID isolation (`--parent-share-pids` is parent-sandbox only; host mounts do not help). See `docs/FLATPAK-EVALUATION.md` |
 | `libc6 >= 2.39` floor | **limitation** | Debian 12 cannot install this build; per-release builds needed |
 | metainfo homepage URL | **missing** | no public repository yet; `url-homepage-missing` warning |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
