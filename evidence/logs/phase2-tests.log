@@ -1,0 +1,166 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/main.rs (target/debug/deps/portscope_cli-1cd158c3f04fce06)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/portscope_core-48f214d894e943ee)
+
+running 61 tests
+test assoc::tests::cgroup_slice_without_unit_returns_none ... ok
+test assoc::tests::cgroup_to_unit_system ... ok
+test assoc::tests::cgroup_to_unit_user_slice_gives_leaf_scope_not_unit ... ok
+test assoc::tests::docker_scope_is_preserved_verbatim ... ok
+test assoc::tests::error_codes_are_stable ... ok
+test assoc::tests::evidence_ranking_puts_strongest_first_and_dedups ... ok
+test assoc::tests::inactive_socket_unit_does_not_grab_endpoint ... ok
+test assoc::tests::no_cgroup_means_no_unit_association_never_port_heuristic ... ok
+test assoc::tests::parse_listen_inet_variants ... ok
+test assoc::tests::pid_reuse_is_detectable_via_start_time ... ok
+test assoc::tests::protocol_matching_from_listen_value ... ok
+test assoc::tests::same_port_different_protocol_are_distinct_keys ... ok
+test assoc::tests::service_cgroup_yields_unit_association_without_pid ... ok
+test assoc::tests::socket_unit_resolves_to_triggered_service ... ok
+test assoc::tests::user_socket_unit_found_by_listen_when_cgroup_is_init_scope ... ok
+test assoc::tests::wildcard_matching_respects_family ... ok
+test endpoints::tests::header_line_is_skipped ... ok
+test endpoints::tests::malformed_line_reports_error_not_panic ... ok
+test endpoints::tests::parses_pid_from_users_field ... ok
+test endpoints::tests::parses_udp_unconn_with_interface_scope ... ok
+test endpoints::tests::parses_v4_listener_with_cgroup_no_pid ... ok
+test endpoints::tests::parses_v6_listener_brackets ... ok
+test endpoints::tests::proc_addr_decode_v4 ... ok
+test endpoints::tests::proc_addr_decode_v6_loopback ... ok
+test endpoints::tests::same_port_tcp_and_udp_coexist ... ok
+test endpoints::tests::unknown_state_preserved_not_dropped ... ok
+test endpoints::tests::unparsable_address_reports_error ... ok
+test endpoints::tests::users_field_multiple_pids_and_no_false_positives ... ok
+test exec::tests::cancellation_stops_run ... ok
+test exec::tests::captures_stdout_and_exit_zero ... ok
+test exec::tests::missing_binary_is_tool_missing ... ok
+test exec::tests::nonzero_exit_is_returned_not_raised ... ok
+test exec::tests::oversized_stdout_is_capped_not_buffered ... ok
+test exec::tests::run_checked_maps_failure_to_tool_failed ... ok
+test exec::tests::run_checked_passes_through_stdout ... ok
+test exec::tests::stderr_is_captured_for_diagnostics ... ok
+test exec::tests::timeout_kills_the_child ... ok
+test journal::tests::bounded_query_for_own_user_journal ... ok
+test journal::tests::max_entries_is_enforced ... ok
+test journal::tests::nonexistent_unit_gives_empty_not_error ... ok
+test journal::tests::priority_and_message_are_parsed ... ok
+test process::tests::cgroup_of_self_is_user_slice ... ok
+test process::tests::correct_expected_start_is_accepted ... ok
+test process::tests::inode_owner_detects_our_own_socket ... ok
+test process::tests::missing_cgroup_yields_empty_not_error ... ok
+test process::tests::nonexistent_pid_is_process_gone ... ok
+test process::tests::pid1_inspect_readable_without_root ... ok
+test process::tests::pids_in_cgroup_of_own_cgroup_contains_self ... ok
+test process::tests::self_inspection_works_as_normal_user ... ok
+test process::tests::stat_parsing_handles_parens_in_comm ... ok
+test process::tests::wrong_expected_start_detects_reuse ... ok
+test services::tests::batched_listing_is_much_faster_than_per_unit ... ok
+test services::tests::batched_listing_matches_systemctl_count_order_of_magnitude ... ok
+test services::tests::dbus_escaping_matches_systemd ... ok
+test services::tests::gvariant_escapes_are_decoded ... ok
+test services::tests::nonexistent_unit_is_not_found_dbus ... ok
+test services::tests::nonexistent_unit_is_not_found_systemctl ... ok
+test services::tests::parse_list_units_reads_struct_fields ... ok
+test services::tests::session_plumbing_is_excluded ... ok
+test services::tests::system_scope_lists_some_units ... ok
+test services::tests::user_scope_socket_units_have_trigger_info_when_active ... ok
+
+test result: ok. 61 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.49s
+
+     Running tests/integration.rs (target/debug/deps/integration-defd26eec8c1c9e8)
+
+running 14 tests
+test collection_is_repeatable ... ok
+test controlled_tcp_ipv4_listener_is_discovered_with_owner ... ok
+test controlled_tcp_ipv6_listener_is_discovered ... ok
+test controlled_udp_binding_is_discovered_as_unconn ... ok
+test failed_user_service_reports_failed_state ... ok
+test foreign_owned_socket_has_no_pid_but_has_uid_and_cgroup ... ok
+test multiple_listen_addresses_on_same_port_are_separate_rows ... ok
+test nonexistent_unit_is_distinguished_from_inactive_unit ... ok
+test parser_handles_ss_extended_field_order_independently ... ok
+test process_exit_is_reported_as_process_gone ... ok
+test same_port_number_on_tcp_and_udp_are_distinct_endpoints ... ok
+test socket_activation_links_socket_unit_to_service ... ok
+test stale_socket_row_vanishes_after_listener_drop ... ok
+test user_service_lifecycle_running_then_stopped ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.15s
+
+     Running unittests src/lib.rs (target/debug/deps/portscope_gtk-7960c5fdc0b814a0)
+
+running 48 tests
+test i18n::tests::chinese_system_defaults_to_chinese ... ok
+test i18n::tests::empty_variables_are_ignored ... ok
+test i18n::tests::endonyms_are_never_localised ... ok
+test i18n::tests::english_system_defaults_to_english ... ok
+test i18n::tests::full_locale_names_are_tried_and_catalogue_loads ... ok
+test i18n::tests::lc_all_beats_lang ... ok
+test i18n::tests::manual_choice_overrides_system ... ok
+test i18n::tests::raw_identifiers_are_not_in_the_catalogue ... ok
+test i18n::tests::retranslatable_runs_every_registered_closure ... ok
+test i18n::tests::setting_roundtrips_through_persistence_key ... ok
+test i18n::tests::static_ui_labels_are_not_used_as_raw_data ... ok
+test i18n::tests::unsupported_locale_falls_back_to_english ... ok
+test i18n::tests::zh_variants_and_encodings ... ok
+test logs::tests::entries_are_bounded_by_max_entries ... ok
+test logs::tests::only_newest_query_is_current ... ok
+test logs::tests::refusing_unit_is_system_scope ... ok
+test logs::tests::user_scope_query_returns_a_classified_outcome ... ok
+test state::tests::cancelled_refresh_marks_stale_and_keeps_data ... ok
+test state::tests::empty_snapshot_yields_empty_rows_and_unknown_freshness ... ok
+test state::tests::endpoint_count_and_units_are_aggregated_per_process ... ok
+test state::tests::endpoint_filter_by_protocol_and_family ... ok
+test state::tests::endpoint_without_process_is_degraded_not_empty_owner ... ok
+test state::tests::failure_keeps_last_data_and_marks_stale ... ok
+test state::tests::failure_without_prior_data_stays_unknown ... ok
+test state::tests::inactive_is_not_a_fault_but_failed_is ... ok
+test state::tests::list_level_service_row_is_marked_not_queried ... ok
+test state::tests::permission_errors_are_surfaced ... ok
+test state::tests::process_row_reports_denied_cmdline_not_empty_string ... ok
+test state::tests::same_object_is_refindable_after_a_rebuild ... ok
+test state::tests::search_is_case_insensitive ... ok
+test state::tests::search_matches_port_pid_process_user_and_unit ... ok
+test state::tests::selection_survives_refresh_by_identity_not_index ... ok
+test state::tests::service_ports_are_attached_from_associations ... ok
+test state::tests::unit_comes_only_from_association_never_from_port ... ok
+test state::tests::unit_from_association_is_shown_with_evidence ... ok
+test state::tests::unowned_only_filter ... ok
+test ui::details::tests::summary_excludes_full_command_lines ... ok
+test ui::summary::tests::summary_is_bounded_and_states_counts ... ok
+test ui::summary::tests::summary_lists_error_codes_once ... ok
+test ui::summary::tests::summary_marks_stale_data ... ok
+test ui::summary::tests::summary_never_collected_is_explicit ... ok
+test ui::summary::tests::summary_omits_command_lines_but_keeps_names ... ok
+test worker::tests::cancel_before_start_yields_cancelled ... ok
+test worker::tests::collection_runs_off_the_calling_thread ... ok
+test worker::tests::default_is_complete_collection ... ok
+test worker::tests::only_newest_generation_is_current ... ok
+test worker::tests::starting_again_supersedes_the_previous_generation ... ok
+test worker::tests::worker_delivers_within_a_sane_budget ... ok
+
+test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running unittests src/main.rs (target/debug/deps/portscope-bda6a7eb9b57fc7c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests portscope_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests portscope_gtk
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

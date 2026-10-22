@@ -5,8 +5,8 @@
 > `PortScope-v1.0-Development-Taskbook.md` has been met with saved evidence.**
 > Unverified items are listed as unverified, never as done.
 
-Last updated: Phase 1 (collection layer productionisation) — **awaiting product
-owner review before Phase 2 starts.**
+Last updated: Phase 2 (GTK UI productionisation & layout fixes) — **awaiting
+product owner review before Phase 3 starts.**
 
 ---
 
@@ -15,14 +15,33 @@ owner review before Phase 2 starts.**
 | Phase | State | Gate met? |
 | --- | --- | --- |
 | **Phase 0 — repo audit & decision freeze** | approved by product owner (LICENSE=MIT, edition 2024 approved, Debian 13 deferred) | **PASSED** |
-| **Phase 1 — collection layer productionisation** | implemented, 70 tests pass, fmt+clippy clean | **submitted for review** |
-| Phase 2 — GTK UI productionisation & layout fixes | **not started** | — |
+| **Phase 1 — collection layer productionisation** | implemented, 70 tests pass, fmt+clippy clean | **PASSED** |
+| **Phase 2 — GTK UI productionisation & layout** | implemented, **123 tests pass**, real data + logs workflow, 1024×600 usable | **submitted for review** |
 | Phase 3 — gettext i18n & settings | **not started** | — |
 | Phase 4 — diagnostics experience & privacy | **not started** | — |
 | Phase 5 — tests, compatibility, visual acceptance | **not started** | — |
 | Phase 6 — packaging, CI/CD, OSS release prep | **not started** | — |
 
 ---
+
+## Phase 2 result — the app is now usable
+
+| Check | Result |
+| --- | --- |
+| `cargo test -- --test-threads=1` | **61 core + 14 integration + 48 gtk = 123 passed, 0 failed, 0 skipped** |
+| `cargo fmt --all --check` | clean |
+| `cargo clippy --workspace --all-targets -- -D warnings` | clean |
+| Real data in GUI | **yes** — 142 endpoints / 114 processes / 346 services from the live system |
+| Workflow | **ports → processes → services → logs all verified with real data** |
+| 1024×600 CSS | **reached exactly** (`xdotool` geometry), 6 columns readable, 2 hidden but in details |
+| Languages | English and 简体中文 both verified by screenshot |
+| gettext `.po` | 108 entries, 0 untranslated, `msgfmt --check-format` clean |
+
+Screenshots: `evidence/screenshots/phase2-*.png` (9 files, all real captures).
+
+Bugs found and fixed by driving the real UI: a **RefCell panic that crashed the
+app**, selection being lost on every auto-refresh, logs never loading because
+each refresh cancelled the query, and click-to-select toggling off.
 
 ## Phase 1 result (this tree, now real code)
 
@@ -144,8 +163,11 @@ only by comparison tests.
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
 | ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1** | see `exec.rs` |
 | Full-collection latency (7–8 s) | **open, Phase 2** | P1-D1; blocks 5 s auto-refresh |
-| GUI real-data path | **absent** | P0-D4, Phase 2 |
-| 1024×600 layout | **broken** | P0-D2, Phase 2 |
+| ~~GUI real-data path~~ | **DONE in Phase 2** | real `collect()` wired via worker thread |
+| ~~1024×600 layout~~ | **DONE in Phase 2** | narrow layout + hidden secondary columns |
+| Filter / sort widgets | **absent** | `EndpointFilter` tested in `state`, **not wired to UI** |
+| Stale / failure screenshots | **not captured** | logic unit-tested; needs an induced failure |
+| In-app language switch | **not screenshot-verified** | implemented + unit-tested; startup language verified |
 
 ---
 
