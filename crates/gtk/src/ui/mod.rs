@@ -13,6 +13,7 @@
 //!   failed each render differently (§5.9, §10).
 
 pub mod details;
+pub mod settings;
 pub mod summary;
 pub mod views;
 
@@ -499,6 +500,7 @@ fn build_menu_model(state: &Rc<App>) -> gio::Menu {
         Some(&tr("Copy diagnostic summary")),
         Some("app.copy-summary"),
     );
+    menu.append(Some(&tr("Settings")), Some("app.settings"));
     menu.append(Some(&tr("About PortScope")), Some("app.about"));
 
     install_actions(state);
@@ -543,6 +545,11 @@ fn install_actions(state: &Rc<App>) {
     });
     app.add_action(&copy);
 
+    let settings = gio::SimpleAction::new("settings", None);
+    let state_s = state.clone();
+    settings.connect_activate(move |_, _| settings::present(&state_s));
+    app.add_action(&settings);
+
     let about = gio::SimpleAction::new("about", None);
     let state_a = state.clone();
     about.connect_activate(move |_, _| {
@@ -565,6 +572,11 @@ fn install_actions(state: &Rc<App>) {
 // ---------------------------------------------------------------------------
 // Language switching
 // ---------------------------------------------------------------------------
+
+/// Public entry so the settings window and the menu share one implementation.
+pub fn apply_language_setting(state: &Rc<App>, setting: LangSetting) {
+    set_language(state, setting)
+}
 
 fn set_language(state: &Rc<App>, setting: LangSetting) {
     let lang = setting.resolve(&process_env());
@@ -704,6 +716,11 @@ fn update_banner(state: &Rc<App>, banner: &adw::Banner) {
 // ---------------------------------------------------------------------------
 // Collection
 // ---------------------------------------------------------------------------
+
+/// Trigger a collection now (used by the Refresh button and settings).
+pub fn refresh_now(state: &Rc<App>) {
+    start_collection(state);
+}
 
 pub fn start_collection(state: &Rc<App>) {
     state.state.borrow_mut().begin_loading();
