@@ -71,9 +71,9 @@ install -d %{buildroot}%{_datadir}/icons/hicolor/scalable/apps
 install -m 644 data/icons/hicolor/scalable/apps/io.github.portscope.app.svg \
     %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/
 
-install -d %{buildroot}%{_datadir}/man/man1
-gzip -9n -c data/man/portscope.1 > %{buildroot}%{_datadir}/man/man1/portscope.1.gz
-gzip -9n -c data/man/portscope-cli.1 > %{buildroot}%{_datadir}/man/man1/portscope-cli.1.gz
+install -d %{buildroot}%{_mandir}/man1
+gzip -9n -c data/man/portscope.1 > %{buildroot}%{_mandir}/man1/portscope.1.gz
+gzip -9n -c data/man/portscope-cli.1 > %{buildroot}%{_mandir}/man1/portscope-cli.1.gz
 
 # Translations. English is the source language.
 for po in crates/gtk/po/*.po; do
@@ -92,8 +92,8 @@ done
 %{_datadir}/applications/io.github.portscope.app.desktop
 %{_datadir}/metainfo/io.github.portscope.app.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/io.github.portscope.app.*
-%{_datadir}/man/man1/portscope.1.gz
-%{_datadir}/man/man1/portscope-cli.1.gz
+%{_mandir}/man1/portscope.1.gz
+%{_mandir}/man1/portscope-cli.1.gz
 %{_datadir}/locale/*/LC_MESSAGES/portscope.mo
 
 %changelog

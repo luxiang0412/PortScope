@@ -131,6 +131,16 @@ sudo usermod -aG adm "$USER"   # then log out and back in
 
 ---
 
+### Fedora: the man page is not installed by default
+
+Fedora ships `tsflags=nodocs` in `/etc/dnf/dnf.conf`, so `dnf` deliberately skips
+documentation files — including `/usr/share/man/man1/portscope.1.gz`. This is
+distribution policy, not a packaging bug. To get the man page:
+
+```bash
+sudo dnf install --setopt=tsflags= portscope
+```
+
 ## How associations work
 
 An endpoint is linked to a service **only** through observable evidence,

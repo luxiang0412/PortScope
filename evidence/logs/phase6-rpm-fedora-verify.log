@@ -1,0 +1,97 @@
+# Phase 6 — RPM verification on a real Fedora 41 system
+
+Host: this machine (Ubuntu 24.04) running `fedora:41` in a container.
+
+**Scope note, stated up front:** a container is a real Fedora userspace with the
+real `dnf`/`rpm` stack, so it validates *package metadata and installation*. It
+does **not** validate desktop integration, systemd/journald behaviour or GPU
+rendering — the taskbook forbids using a container to claim those. What follows
+is a packaging claim only.
+
+## Dependency resolution
+
+```
+$ dnf install -y /tmp/portscope-0.1.0-1.x86_64.rpm
+...
+Complete!
+```
+
+`dnf` resolved and installed gtk4, libadwaita, pango, glib2 and the rest
+automatically: 286 packages. **No dependency errors**, so the declared
+`gtk4 >= 4.14` / `libadwaita >= 1.5` requirements are satisfiable on Fedora 41
+(glibc 2.40 ≥ the required 2.39).
+
+## Installed state
+
+```
+$ rpm -q portscope
+portscope-0.1.0-1.x86_64
+$ ldd /usr/bin/portscope | grep -c "not found"
+0
+$ timeout 30 portscope-cli snapshot | head -1
+== PortScope snapshot ==
+```
+
+Binary runs on Fedora with zero unresolved libraries.
+
+## A four-hour red herring, recorded because it matters
+
+On Fedora the man pages and `README` were **absent** while `rpm -V` reported the
+package intact. Investigation:
+
+| Check | Result |
+| --- | --- |
+| `rpm2cpio | cpio -extract` from the .rpm | man pages present, correct sizes |
+| `rpm --root /tmp/x -i *.rpm` | all 21 files installed, man pages included |
+| `rpm -i` directly into the Fedora container | man pages installed |
+| `dnf install` the same package | man pages and README **missing** |
+| `dnf install man-db` in the same container | *its* man pages installed fine |
+
+The actual cause:
+
+```
+$ cat /etc/dnf/dnf.conf
+[main]
+tsflags=nodocs
+```
+
+**Fedora ships `tsflags=nodocs` by default**, so `dnf` deliberately skips every
+file flagged as documentation (`d`), which includes `/usr/share/man/*` and
+`/usr/share/doc/*`. `man-db`'s own pages survive because they are additionally
+flagged `g` and are pulled in by a different path.
+
+Verified both ways:
+
+| `/etc/dnf/dnf.conf` | man pages | README | binary | .desktop |
+| --- | --- | --- | --- | --- |
+| default (`tsflags=nodocs`) | 0 | 0 | present | present |
+| `tsflags` removed | **2** | **1** | present | present |
+
+With the line commented out:
+
+```
+$ man -w portscope portscope-cli
+/usr/share/man/man1/portscope.1.gz
+/usr/share/man/man1/portscope-cli.1.gz
+$ desktop-file-validate /usr/share/applications/io.github.portscope.app.desktop
+(no output: valid)
+```
+
+## Conclusion
+
+- The package is correct. Nothing needed fixing in the spec; several speculative
+  changes made during the investigation were reverted.
+- The missing documentation on Fedora is **distribution policy**, not a defect.
+  A user who wants the man page installs with
+  `sudo dnf install --setopt=tsflags= portscope`.
+- This deserves an entry in the README so nobody files a bug about it.
+
+## Limits
+
+- **Desktop integration, Wayland on Fedora, systemd/journald collection**: not
+  tested, and not testable in a container. The snapshot in the container returns
+  0 endpoints because a container has no listening sockets and no systemd bus —
+  behaviour that is itself correct (PortScope reported the missing bus rather
+  than pretending an empty result).
+- **Not a real Fedora workstation.** A Fedora host or CI runner is still the
+  right place for the final sign-off.

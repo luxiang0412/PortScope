@@ -197,7 +197,7 @@ only by comparison tests.
 | README / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT | **DONE** | |
 | CI pipeline | **DONE** (unrun) | `.github/workflows/ci.yml`, 4 jobs (test, translations, packages, metadata); every step reproduced locally |
 | **`.deb` package** | **DONE** | lintian-clean apart from `initial-upload-closes-no-bugs`; installed and run from `/usr/bin`; byte-reproducible |
-| **`.rpm` package** | **DONE** | installs in an isolated root, binary runs, reproducible; needs glibc 2.39 (Fedora 40+/Debian 13). Not validated on a real Fedora host |
+| **`.rpm` package** | **DONE** | dependency resolution verified on Fedora 41 (`dnf` installed it plus 286 deps, binary runs, zero unresolved libs). Needs glibc 2.39. Man page is skipped on Fedora by design (`tsflags=nodocs`). Desktop integration on Fedora still untested |
 | **Flatpak** | **REJECTED with evidence** | `flatpak run` forces PID isolation (`--parent-share-pids` is parent-sandbox only; host mounts do not help). See `docs/FLATPAK-EVALUATION.md` |
 | `libc6 >= 2.39` floor | **limitation** | Debian 12 cannot install this build; per-release builds needed |
 | metainfo homepage URL | **missing** | no public repository yet; `url-homepage-missing` warning |

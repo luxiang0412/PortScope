@@ -78,14 +78,14 @@ fi
 # byte-identical binaries and different BUILDTIME (1792652996 vs 1792653080).
 rpmbuild -bb $NODEPS \
     --define "_topdir $TOP" \
+    --define "debug_package %{nil}" \
+    --define "_build_id_links none" \
+    --define "__os_install_post %{nil}" \
     --define "_use_source_date_epoch_as_buildtime 1" \
     --define "_source_date_epoch_from_changelog 0" \
     --define "use_source_date_epoch_as_buildtime 1" \
     --define "clamp_mtime_to_source_date_epoch 1" \
     --define "_sourcedir $TOP/SOURCES" \
-    --define "debug_package %{nil}" \
-    --define "_build_id_links none" \
-    --define "__os_install_post %{nil}" \
     --define "_buildhost reproducible" \
     "$ROOT/packaging/rpm/portscope.spec"
 
