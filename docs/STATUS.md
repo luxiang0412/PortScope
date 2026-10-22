@@ -20,7 +20,7 @@ product owner review before Phase 3 starts.**
 | Phase 3 — gettext i18n & settings | **not started** | — |
 | Phase 4 — diagnostics experience & privacy | **not started** | — |
 | Phase 5 — tests, compatibility, visual acceptance | **not started** | — |
-| Phase 6 — packaging, CI/CD, OSS release prep | **not started** | — |
+| Phase 6 — packaging, CI/CD, OSS release prep | metadata, scripts, docs, CI done; **distro packages not started** | partial |
 
 ---
 
@@ -192,7 +192,12 @@ only by comparison tests.
 | `hidepid=2` | **unverified** on a real host | code treats `/proc` reads as failable, but no `hidepid=2` host was tested. |
 | ~~gettext `.po` catalogue~~ | **DONE** | 113 entries, 0 untranslated, `msgfmt --check-format` clean |
 | LICENSE | **DONE** | MIT (`LICENSE`, `license` field in every crate) |
-| Packaging (`.deb`/`.rpm`), CI, desktop file, icons | **absent** | Phase 6 |
+| Desktop entry, metainfo, icon set | **DONE** | validated; installed and launched from a clean clone |
+| Install / uninstall scripts | **DONE** | unprivileged (~/.local); verified end to end |
+| README / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT | **DONE** | |
+| CI pipeline | **DONE** (unrun) | `.github/workflows/ci.yml`, 3 jobs; steps reproduced locally from a clean clone |
+| `.deb` / `.rpm` / Flatpak packages | **absent** | Phase 6 remaining |
+| metainfo homepage URL | **missing** | no public repository yet; `url-homepage-missing` warning |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
 | ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1**, hardened in Phase 3 | timeout was not actually bounding (61s vs 5s) until grandchildren stopped holding the pipe; see `exec.rs` |
 | Full-collection latency (7–8 s) | **open, Phase 2** | P1-D1; blocks 5 s auto-refresh |
