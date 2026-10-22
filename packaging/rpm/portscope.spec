@@ -4,7 +4,7 @@ Release:        1%{?dist}
 Summary:        Local port, process and service inspector
 
 License:        MIT
-URL:            https://example.invalid/portscope
+URL:            https://github.com/luxiang0412/PortScope
 # No upstream tarball yet: the spec is built from a source tree with
 # `rpmbuild -bb --define "_sourcedir <repo>" ...` (see scripts/build-rpm.sh).
 Source0:        %{name}-%{version}.tar.gz

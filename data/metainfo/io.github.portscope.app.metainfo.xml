@@ -33,17 +33,8 @@
 
   <launchable type="desktop-id">io.github.portscope.app.desktop</launchable>
 
-  <!--
-    No homepage/bugtracker URL yet: the project has no public repository.
-    Adding a guessed URL would be a false claim, and `appstreamcli validate`
-    checks reachability (a guessed URL produced url-not-reachable errors).
-
-    Consequence: `appstreamcli validate` reports one warning,
-    `url-homepage-missing`, and therefore exits non-zero when the validator
-    is run in its strict mode.
-    This is recorded in docs/PACKAGING.md as an open item; it must be resolved
-    by adding the real repository URL before release.
-  -->
+  <url type="homepage">https://github.com/luxiang0412/PortScope</url>
+  <url type="bugtracker">https://github.com/luxiang0412/PortScope/issues</url>
 
   <developer id="io.github.portscope">
     <name>PortScope contributors</name>

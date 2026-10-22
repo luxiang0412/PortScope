@@ -131,7 +131,7 @@ Depends: $DEPENDS
 Recommends: $RUNTIME_TOOLS
 Installed-Size: $INSTALLED_SIZE
 Maintainer: PortScope contributors <noreply@example.invalid>
-Homepage: https://example.invalid/portscope
+Homepage: https://github.com/luxiang0412/PortScope
 Description: local port, process and service inspector
  PortScope shows which local TCP/UDP endpoints are listening, which
  process owns each one, which systemd unit that process belongs to,
