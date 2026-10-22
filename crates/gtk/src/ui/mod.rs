@@ -789,6 +789,34 @@ fn apply_result(state: &Rc<App>, outcome: Outcome) {
         Outcome::Snapshot(snap) => {
             let n = snap.endpoints.len();
             let errs = snap.errors.len();
+            // Zero endpoints *plus* an endpoint-collection error means the
+            // endpoint scan failed. Services may still have been collected, so
+            // requiring `processes.is_empty()` was wrong: the app showed
+            // "0 Ports" with no hint that `ss` had timed out, which reads as
+            // "this machine has no listening ports".
+            let fatal = n == 0
+                && snap.errors.iter().any(|e| {
+                    matches!(
+                        e,
+                        portscope_core::model::CollectionError::Timeout { .. }
+                            | portscope_core::model::CollectionError::ToolMissing { .. }
+                            | portscope_core::model::CollectionError::ToolFailed { .. }
+                    )
+                });
+            if fatal {
+                let msg = snap
+                    .errors
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join("; ");
+                state.state.borrow_mut().apply_failure(msg);
+                views::refill_all(state);
+                trace("snapshot had no data and a fatal error -> failed");
+                state.i18n.apply_all();
+                details::refresh_selected(state);
+                return;
+            }
             state.state.borrow_mut().apply_snapshot(*snap);
             views::refill_all(state);
             trace(&format!(
@@ -802,6 +830,11 @@ fn apply_result(state: &Rc<App>, outcome: Outcome) {
         Outcome::Failed(msg) => {
             trace(&format!("collection failed: {msg}"));
             state.state.borrow_mut().apply_failure(msg);
+            // A failure still has to refresh the derived UI. Without this the
+            // table kept whatever it had and the empty/search-empty pages were
+            // never shown, so a failed first collection looked like an empty
+            // table with no explanation.
+            views::refill_all(state);
         }
     }
     // Re-render dependent widgets.

@@ -190,8 +190,9 @@ only by comparison tests.
 | ~~Non-`adm` user, full GUI run~~ | **VERIFIED in Phase 2** | ran as `ps_user` (uid 1001, groups: only its own). 141 endpoints / 244 services collected, GUI fully usable, permission limits shown honestly. See `evidence/logs/phase2-nonroot-user.log` and `phase2-nonroot-user-1400.png`. |
 | Fractional scaling 125 % / 175 % | **unverified** | session offers 100/200 % + text scaling. |
 | `hidepid=2` | **unverified** on a real host | code treats `/proc` reads as failable, but no `hidepid=2` host was tested. |
-| gettext `.po` catalogue | **absent** | Spike used typed string tables; Phase 3 must produce `.po`. |
-| Packaging (`.deb`/`.rpm`), CI, LICENSE | **absent** | Phase 6. |
+| ~~gettext `.po` catalogue~~ | **DONE** | 113 entries, 0 untranslated, `msgfmt --check-format` clean |
+| LICENSE | **DONE** | MIT (`LICENSE`, `license` field in every crate) |
+| Packaging (`.deb`/`.rpm`), CI, desktop file, icons | **absent** | Phase 6 |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
 | ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1** | see `exec.rs` |
 | Full-collection latency (7–8 s) | **open, Phase 2** | P1-D1; blocks 5 s auto-refresh |
@@ -201,7 +202,7 @@ only by comparison tests.
 | ~~Filter / sort widgets~~ | **DONE** | toolbar: protocol / family / unknown-owner + sort column & direction |
 | Stale / failure screenshots | **not captured** | logic unit-tested; needs an induced failure |
 | ~~In-app language switch~~ | **DONE + verified** | switch updates main *and* settings window; `language=zh_CN` survives restart |
-| Log level filter / single-entry copy | **absent** | §5.6 requires both |
+| ~~Log level filter / single-entry copy~~ | **DONE** | severity dropdown, text search, per-entry copy button |
 
 ---
 

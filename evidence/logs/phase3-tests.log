@@ -1,5 +1,5 @@
    Compiling portscope-gtk v0.1.0 (/home/luxiang/project/private/PortScope/crates/gtk)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
      Running unittests src/main.rs (target/debug/deps/portscope_cli-1cd158c3f04fce06)
 
 running 1 test
@@ -9,7 +9,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src/lib.rs (target/debug/deps/portscope_core-48f214d894e943ee)
 
-running 62 tests
+running 63 tests
 test assoc::tests::cgroup_join_runs_even_when_a_pid_hint_exists ... ok
 test assoc::tests::cgroup_slice_without_unit_returns_none ... ok
 test assoc::tests::cgroup_to_unit_system ... ok
@@ -48,6 +48,7 @@ test exec::tests::run_checked_maps_failure_to_tool_failed ... ok
 test exec::tests::run_checked_passes_through_stdout ... ok
 test exec::tests::stderr_is_captured_for_diagnostics ... ok
 test exec::tests::timeout_kills_the_child ... ok
+test exec::tests::timeout_returns_even_when_a_grandchild_holds_the_pipe ... ok
 test journal::tests::bounded_query_for_own_user_journal ... ok
 test journal::tests::max_entries_is_enforced ... ok
 test journal::tests::nonexistent_unit_gives_empty_not_error ... ok
@@ -73,7 +74,7 @@ test services::tests::session_plumbing_is_excluded ... ok
 test services::tests::system_scope_lists_some_units ... ok
 test services::tests::user_scope_socket_units_have_trigger_info_when_active ... ok
 
-test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.41s
+test result: ok. 63 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.87s
 
      Running tests/integration.rs (target/debug/deps/integration-defd26eec8c1c9e8)
 
@@ -93,7 +94,7 @@ test socket_activation_links_socket_unit_to_service ... ok
 test stale_socket_row_vanishes_after_listener_drop ... ok
 test user_service_lifecycle_running_then_stopped ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.56s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.61s
 
      Running unittests src/lib.rs (target/debug/deps/portscope_gtk-7960c5fdc0b814a0)
 
@@ -158,7 +159,7 @@ test worker::tests::only_newest_generation_is_current ... ok
 test worker::tests::starting_again_supersedes_the_previous_generation ... ok
 test worker::tests::worker_delivers_within_a_sane_budget ... ok
 
-test result: ok. 59 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+test result: ok. 59 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
 
      Running unittests src/main.rs (target/debug/deps/portscope-bda6a7eb9b57fc7c)
 

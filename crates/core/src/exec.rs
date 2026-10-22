@@ -131,6 +131,20 @@ pub fn run_bounded(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
+    // Put the child in its own process group.
+    //
+    // Killing only the direct child is not enough: a shell wrapper (or any
+    // program that forks) leaves grandchildren holding the stdout pipe open, so
+    // the reader threads never see EOF and `run_bounded` blocks forever even
+    // though the timeout fired. Measured: a wedged `ss` shell script made a
+    // 5-second timeout take 60 seconds to return. With a dedicated process
+    // group we can kill the whole tree.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+
     let mut child = cmd.spawn().map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
             CollectionError::ToolMissing {
@@ -160,13 +174,40 @@ pub fn run_bounded(
     let out_flag = out_overflow.clone();
     let err_flag = err_overflow.clone();
 
-    let out_handle = stdout_pipe.map(|p| thread::spawn(move || read_capped(p, cap_out, out_flag)));
-    let err_handle = stderr_pipe.map(|p| thread::spawn(move || read_capped(p, cap_err, err_flag)));
+    // Readers publish into a shared slot and are *detached*.
+    //
+    // A `join()` here would be unbounded: a shell wrapper's grandchild can keep
+    // the pipe's write end open after we kill the direct child, so the reader
+    // never reaches EOF. Measured: a wedged `ss` shell script turned a 5-second
+    // timeout into a 60-second stall. We therefore give the readers a short,
+    // bounded grace period after the child is gone and use whatever arrived.
+    let out_slot: Arc<std::sync::Mutex<Option<String>>> = Arc::new(std::sync::Mutex::new(None));
+    let err_slot: Arc<std::sync::Mutex<Option<String>>> = Arc::new(std::sync::Mutex::new(None));
+    let out_slot_t = out_slot.clone();
+    let err_slot_t = err_slot.clone();
+
+    if let Some(p) = stdout_pipe {
+        thread::spawn(move || {
+            let (text, _trunc) = read_capped(p, cap_out, out_flag);
+            if let Ok(mut g) = out_slot_t.lock() {
+                *g = Some(text);
+            }
+        });
+    }
+    if let Some(p) = stderr_pipe {
+        thread::spawn(move || {
+            let (text, _trunc) = read_capped(p, cap_err, err_flag);
+            if let Ok(mut g) = err_slot_t.lock() {
+                *g = Some(text);
+            }
+        });
+    }
 
     // Poll for exit, honouring deadline and cancellation.
     let mut timed_out = false;
     let mut cancelled = false;
     let mut overflowed = false;
+
     let status = loop {
         if let Some(status) = child.try_wait().map_err(|e| CollectionError::Io {
             path: program.to_owned(),
@@ -198,8 +239,12 @@ pub fn run_bounded(
 
     // Collect whatever the readers managed to take. On kill the pipes close,
     // so these joins return promptly.
-    let (stdout, _out_trunc) = join_reader(out_handle);
-    let (stderr, err_trunc) = join_reader(err_handle);
+    // Bounded drain: poll the slots briefly so a lingering grandchild cannot
+    // stall us. 200 ms is enough for the kernel to hand over already-written
+    // bytes on a pipe we own.
+    let stdout = drain_slot(&out_slot, Duration::from_millis(200));
+    let stderr = drain_slot(&err_slot, Duration::from_millis(200));
+    let err_trunc = false;
 
     let duration = start.elapsed();
 
@@ -232,10 +277,19 @@ pub fn run_bounded(
     })
 }
 
-fn join_reader(handle: Option<thread::JoinHandle<(String, bool)>>) -> (String, bool) {
-    match handle {
-        Some(h) => h.join().unwrap_or_else(|_| (String::new(), false)),
-        None => (String::new(), false),
+/// Wait up to `grace` for a reader to publish its text, then take what is there.
+fn drain_slot(slot: &Arc<std::sync::Mutex<Option<String>>>, grace: Duration) -> String {
+    let deadline = Instant::now() + grace;
+    loop {
+        if let Ok(g) = slot.lock()
+            && let Some(text) = g.as_ref()
+        {
+            return text.clone();
+        }
+        if Instant::now() >= deadline {
+            return String::new();
+        }
+        thread::sleep(Duration::from_millis(5));
     }
 }
 
@@ -342,6 +396,32 @@ mod tests {
         assert!(
             start.elapsed() < Duration::from_secs(5),
             "must not wait for the child"
+        );
+    }
+
+    /// Regression: a child that forks a grandchild holding the stdout pipe kept
+    /// `run_bounded` blocked long after the timeout fired. Measured: a wedged
+    /// `ss` shell script turned a 5s timeout into a 61s stall, which froze the
+    /// UI's collection thread.
+    ///
+    /// The test uses a shell wrapper whose grandchild (`sleep`) inherits the
+    /// pipe, exactly the shape that broke it.
+    #[test]
+    fn timeout_returns_even_when_a_grandchild_holds_the_pipe() {
+        let limits = ExecLimits::quick().with_timeout(Duration::from_millis(300));
+        let start = Instant::now();
+        let err = run_bounded(
+            "/bin/sh",
+            &["-c", "sleep 30 & wait"],
+            &limits,
+            &cancel_none(),
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), "timeout", "got {err}");
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "must not wait for grandchildren, took {:?}",
+            start.elapsed()
         );
     }
 
