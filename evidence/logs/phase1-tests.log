@@ -1,5 +1,5 @@
-   Compiling portscope-core v0.1.0 (/home/luxiang/project/private/PortScope/crates/core)
-   Compiling portscope-cli v0.1.0 (/home/luxiang/project/private/PortScope/crates/cli)
+   Compiling portscope-core v0.1.0 (<repo>/crates/core)
+   Compiling portscope-cli v0.1.0 (<repo>/crates/cli)
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.53s
      Running unittests src/main.rs (target/debug/deps/portscope_cli-8285788c1ea29aa0)
 

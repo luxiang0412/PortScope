@@ -1,7 +1,7 @@
 # cargo fmt --check baseline — 2026-10-22T08:57:50+08:00
 
 ===== portscope-core =====
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-core/examples/dbg.rs:1:
+Diff in <spike-repo>/spikes/portscope-core/examples/dbg.rs:1:
  use portscope_core::model::UnitScope;
  use portscope_core::services::{collect_services, Backend};
 [31m-fn main(){
@@ -44,7 +44,7 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-core/example
 [fmt --check exit: 0]
 
 ===== portscope-cli =====
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:43:
+Diff in <spike-repo>/spikes/portscope-cli/src/main.rs:43:
              .associations
              .iter()
              .find_map(|a| match &a.kind {
@@ -55,7 +55,7 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main
 (B[m                     Some(identity.pid.to_string())
                  }
                  _ => None,
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:53:
+Diff in <spike-repo>/spikes/portscope-cli/src/main.rs:53:
              .associations
              .iter()
              .find_map(|a| match &a.kind {
@@ -66,7 +66,7 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main
 (B[m                     Some(unit.clone())
                  }
                  _ => None,
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:81:
+Diff in <spike-repo>/spikes/portscope-cli/src/main.rs:81:
              .iter()
              .map(|e| format!("{:?}({})", e.kind, e.detail))
              .collect();
@@ -80,14 +80,14 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main
 (B[m     }
  
      println!("\n== errors ({}) ==", snap.errors.len());
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:100:
+Diff in <spike-repo>/spikes/portscope-cli/src/main.rs:100:
          Some("user") => UnitScope::User,
          _ => UnitScope::System,
      };
 [fmt --check exit: 0]
 
 ===== portscope-gtk =====
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:356:
+Diff in <spike-repo>/spikes/portscope-gtk/src/i18n.rs:356:
              .find(|(name, v)| name == k && !v.trim().is_empty())
              .map(|(_, v)| v.as_str())
      };
@@ -98,7 +98,7 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n
 (B[m     lang_from_locale(raw.unwrap_or(""))
  }
  
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:474:
+Diff in <spike-repo>/spikes/portscope-gtk/src/i18n.rs:474:
      use super::*;
  
      fn env(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
@@ -110,7 +110,7 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n
 (B[m     }
  
      #[test]
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:481:
+Diff in <spike-repo>/spikes/portscope-gtk/src/i18n.rs:481:
      fn system_default_from_lang_only() {
 [31m-        assert_eq!(LangSetting::System.resolve(&env(&[("LANG", "zh_CN.UTF-8")])), Lang::ZhCn);
 (B[m[31m-        assert_eq!(LangSetting::System.resolve(&env(&[("LANG", "en_US.UTF-8")])), Lang::En);
@@ -125,6 +125,6 @@ Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n
 (B[m     }
  
      #[test]
-Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:487:
+Diff in <spike-repo>/spikes/portscope-gtk/src/i18n.rs:487:
      fn lc_all_overrides_lang() {
 [fmt --check exit: 0]

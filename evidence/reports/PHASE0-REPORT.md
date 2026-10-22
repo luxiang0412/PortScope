@@ -61,8 +61,8 @@ All new; nothing in the Spike tree was modified or deleted.
 | `evidence/logs/phase0-clippy.log` | clippy baseline (13 warnings) |
 | `evidence/logs/phase0-fmt.log` | `fmt --check` failures |
 | `evidence/logs/phase0-live-snapshot.log` | live collection, **redacted** |
-| `evidence/screenshots/app-default.png` | GUI launched today on X11 `:1` |
-| `evidence/screenshots/narrow-1024-gdk1.png` | **defect P0-D2 evidence** |
+| a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* | GUI launched today on X11 `:1` |
+| a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* | **defect P0-D2 evidence** |
 | `.gitignore`, directory skeleton | production layout scaffolding |
 
 ## 4. 执行命令
@@ -70,7 +70,7 @@ All new; nothing in the Spike tree was modified or deleted.
 ```bash
 # inventory
 git status; git log --oneline      # spike repo: clean, 3 commits
-find /home/luxiang -iname '*portscope*'
+find <home> -iname '*portscope*'
 
 # environment
 . /etc/os-release; uname -r; gnome-shell --version
@@ -90,7 +90,7 @@ cargo run --manifest-path spikes/portscope-cli/Cargo.toml -- snapshot
 cargo build --manifest-path spikes/portscope-gtk/Cargo.toml
 DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority ./spikes/portscope-gtk/target/debug/portscope-gtk
 wmctrl -i -r 0x04400004 -e 0,0,0,1024,600   # force exact 1024x600 CSS
-import -window 0x04400004 narrow-1024-gdk1.png
+import -window 0x04400004 the Phase 0 narrow capture (removed before publishing)
 ```
 
 ## 5. 测试结果
@@ -112,15 +112,15 @@ import -window 0x04400004 narrow-1024-gdk1.png
 ## 6. 真实运行证据
 
 - **截图路径：**
-  - `evidence/screenshots/app-default.png` — GUI launched today, X11 `:1`,
+  - a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* — GUI launched today, X11 `:1`,
     Ubuntu 24.04.5, 200 % scale, English, light theme, fictional data
-  - `evidence/screenshots/narrow-1024-gdk1.png` — window forced to exactly
+  - a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* — window forced to exactly
     1024×600 CSS at `GDK_SCALE=1`; shows only 3 of 7 columns
 - **日志路径：** `evidence/logs/phase0-*` (6 files, listed in §3)
 - **环境信息：** Ubuntu 24.04.5 LTS; kernel 7.0.0-38-generic; GNOME Shell 46.0;
   session **X11 on `:1`** (no Wayland); GTK 4.14.5; libadwaita 1.5.0; rustc/cargo
   1.94.1; iproute2 6.1.0 (no `ss --json`); systemd 255; gettext 0.21; user
-  `luxiang` **in group `adm`** (so system journal is readable — the non-`adm` case
+  `<user>` **in group `adm`** (so system journal is readable — the non-`adm` case
   remains unverified).
 
 ## 7. 未解决问题与风险

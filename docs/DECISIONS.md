@@ -32,7 +32,7 @@ and tests that pass on this machine.
 | D7 | Typed string tables in the spike; **`.po` required for production** | **Provisional → must change in Phase 3** | see D-P0-6 |
 | D8 | Fictional data in the prototype | **Accepted for spike only**; production must show real data (P0-D4) | — |
 | D9 | Fixed-width 360 px details column, not a split view | **Provisional** — interacts badly with narrow widths; revisit with P0-D2 | screenshot evidence |
-| D10 | Character-based column sizing | **Accepted**, but insufficient alone — P0-D2 shows total loss of 4 columns at 1024×600 | `narrow-1024-gdk1.png` |
+| D10 | Character-based column sizing | **Accepted**, but insufficient alone — P0-D2 shows total loss of 4 columns at 1024×600 | a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* |
 | D11 | Self-contained tests, no machine-dependent services; skips must log | **Accepted** | 0 skipped reproduced |
 
 ---
@@ -108,7 +108,7 @@ Spike's `geteuid` FFI shim was replaced with an effective-uid read from
 
 **Accepted.**
 
-- **Chosen:** `/home/luxiang/project/private/PortScope/` is the production
+- **Chosen:** `<repo>/` is the production
   repository. Spike 01 remains at `~/project/private/spike_verify/` with its
   own git history and all `evidence/`.
 - **Rejected:** moving Spike 01 wholesale into this tree. The taskbook (§0.2,

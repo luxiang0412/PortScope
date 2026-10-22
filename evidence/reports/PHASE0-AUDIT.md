@@ -122,7 +122,7 @@ Spike called this "rightmost columns can fall outside the viewport". Measured
 directly, it is worse: at `GDK_SCALE=1` with the window forced to exactly
 1024×600, only **Protocol / Local address / Port** are visible. State, Process,
 PID and Systemd unit are gone, and no horizontal scrollbar appears
-(`evidence/screenshots/narrow-1024-gdk1.png`). Blocks the §5.8 gate.
+(a Phase 0 capture *(capture removed before publishing: contained LAN addresses)*). Blocks the §5.8 gate.
 
 #### P0-D3 — The "1024×600 unreachable" conclusion was a 200 %-scale artifact (severity: informational)
 

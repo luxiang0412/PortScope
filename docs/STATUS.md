@@ -53,7 +53,7 @@ now distinguishes "hidden by permissions" from "socket unit held by systemd"
 instead of calling both "permission denied".
 
 Evidence: `evidence/logs/phase2-owner-fix.log`,
-`evidence/screenshots/phase2-en-owners-fixed.png`, regression test
+regression test
 `cgroup_join_runs_even_when_a_pid_hint_exists`.
 
 ## Phase 2 result — the app is now usable
@@ -69,7 +69,10 @@ Evidence: `evidence/logs/phase2-owner-fix.log`,
 | Languages | English and 简体中文 both verified by screenshot |
 | gettext `.po` | 108 entries, 0 untranslated, `msgfmt --check-format` clean |
 
-Screenshots: `evidence/screenshots/phase2-*.png` (9 files, all real captures).
+Screenshots: `evidence/screenshots/phase-public-*.png` — real captures of the
+running application, generated from **fictional data** so no private addresses
+are published. (The earlier real-data captures were removed before publishing;
+they contained the developer's own LAN addresses.)
 
 Bugs found and fixed by driving the real UI: a **RefCell panic that crashed the
 app**, selection being lost on every auto-refresh, logs never loading because
@@ -130,7 +133,7 @@ Every number below was re-run today; raw output in `evidence/logs/`.
 | `cargo clippy` cli | 2 warnings | `phase0-clippy.log` |
 | `cargo fmt --check` | **fails in all three crates** | `phase0-fmt.log` |
 | CLI live `snapshot` | 142 endpoints / 159 processes / 305 services / 322 associations, 2 350 ms, `degraded=true` | `phase0-live-snapshot.log` |
-| GUI launch on X11 `:1` | launches, renders, screenshot captured | `evidence/screenshots/app-default.png` |
+| GUI launch on X11 `:1` | launches, renders, screenshot captured | a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* |
 
 **Conclusion:** the Spike's "61 passed / 0 skipped" claim reproduces exactly.
 Its stated gaps also reproduce. Nothing was found to be overstated, and two
@@ -152,7 +155,7 @@ nit.** The 1 420–2 350 ms snapshot above is unbounded by construction.
 ### P0-D2. The 1024×600 layout defect is far worse than "rightmost columns overflow"
 
 The Spike report says at `GDK_SCALE=1` "the rightmost columns can still fall
-outside the viewport". Measured directly (`evidence/screenshots/narrow-1024-gdk1.png`,
+outside the viewport". Measured directly (a Phase 0 capture *(capture removed before publishing: contained LAN addresses)*,
 window forced to exactly 1024×600 with `wmctrl`): **only 3 of 7 columns are
 visible — Protocol, Local address, Port. State, Process, PID and Systemd unit
 are entirely unreachable, and there is no horizontal scrollbar.**
@@ -187,7 +190,7 @@ only by comparison tests.
 | --- | --- | --- |
 | Debian 13 | **unverified** | no real host/VM available. Taskbook §9.1 makes it a release gate. |
 | Wayland | **unverified** | session is X11 `:1`. Taskbook §9.2 release gate. |
-| ~~Non-`adm` user, full GUI run~~ | **VERIFIED in Phase 2** | ran as `ps_user` (uid 1001, groups: only its own). 141 endpoints / 244 services collected, GUI fully usable, permission limits shown honestly. See `evidence/logs/phase2-nonroot-user.log` and `phase2-nonroot-user-1400.png`. |
+| ~~Non-`adm` user, full GUI run~~ | **VERIFIED in Phase 2** | ran as `ps_user` (uid 1001, groups: only its own). 141 endpoints / 244 services collected, GUI fully usable, permission limits shown honestly. See `evidence/logs/phase2-nonroot-user.log`. |
 | Fractional scaling 125 % / 175 % | **unverified** | session offers 100/200 % + text scaling. |
 | ~~`hidepid=2`~~ | **VERIFIED** | real reversible remount (`hidepid=invisible`); degrades correctly, services still associated, no crash. See `phase5-hidepid-verify.log` |
 | ~~gettext `.po` catalogue~~ | **DONE** | 113 entries, 0 untranslated, `msgfmt --check-format` clean |

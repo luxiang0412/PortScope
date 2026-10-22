@@ -10,10 +10,14 @@ what the journal says about it — **and what the evidence is** for each link.
 It runs entirely as the invoking user. No root, no `sudo`, no polkit, no
 telemetry, no network access.
 
-<!-- Screenshots are real captures of the running application. -->
+<!--
+  Screenshots are real captures of the running application, but with fictional
+  data (PORTSCOPE_DEMO_DATA=1), so no private addresses or machine details are
+  published. The status bar shows "Sample data" in every one of them.
+-->
 | Ports (English) | Ports (简体中文) |
 | --- | --- |
-| ![Ports, English](evidence/screenshots/phase2-en-1400-narrow.png) | ![Ports, Chinese](evidence/screenshots/phase3-zh-startup-restored.png) |
+| ![Ports, English](evidence/screenshots/phase-public-en-ports-1400.png) | ![Ports, Chinese](evidence/screenshots/phase-public-zh-ports-1400.png) |
 
 ---
 

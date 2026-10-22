@@ -101,7 +101,7 @@ wmctrl -i -r <wid> -e 0,0,0,1024,600
   | `phase2-en-service-details.png` | Service details with evidence chain |
   | `phase2-en-service-logs.png` | **Real journal entries** — timestamps, priority, verbatim text |
   | `phase2-en-no-search-results.png` | Distinct "Search returned no results" state |
-  | `narrow-1024-gdk1.png` | (Phase 0) the **old defect** for comparison |
+  | a Phase 0 capture *(capture removed before publishing: contained LAN addresses)* | (Phase 0) the **old defect** for comparison |
 - **日志路径：** `evidence/logs/phase2-{tests,clippy,fmt,p1d1}.log`
 - **实测数据（真实系统）：** 142 endpoints / 111 processes / 342 services /
   125 endpoints without an attributable process, `permission_denied` recorded.
@@ -153,7 +153,7 @@ Created a user `ps_user` (uid 1001, **groups: only its own — no `sudo`, no
   requested (`evidence/logs/phase2-nonroot-user.log`).
 - GUI: launched and rendered, 141 endpoints / 244 services, permission limits
   shown as `Permission denied (141)`, no crash
-  (`evidence/screenshots/phase2-nonroot-user-1400.png`).
+  (a real-data capture, removed before publishing because it contained LAN addresses).
 - Confirmed the binary is **not** setuid and the source contains no
   `sudo`/`pkexec`/polkit/`unsafe`.
 - X11 note: the test needed `xhost +si:localuser:ps_user` because a second user

@@ -747,6 +747,10 @@ fn update_status(state: &Rc<App>, label: &gtk::Label) {
     if let LoadState::Failed(msg) = &st.load {
         line = format!("{} — {}", line, msg);
     }
+    if is_demo_mode() {
+        // Never let a screenshot of fictional data look like real data.
+        line = format!("{} · {}", tr("Sample data"), line);
+    }
     label.set_text(&line);
 }
 
@@ -770,7 +774,24 @@ pub fn refresh_now(state: &Rc<App>) {
     start_collection(state);
 }
 
+/// True when running with fictional data (public screenshots).
+pub fn is_demo_mode() -> bool {
+    std::env::var_os("PORTSCOPE_DEMO_DATA").is_some()
+}
+
 pub fn start_collection(state: &Rc<App>) {
+    // Fictional data for screenshots: no collection, no machine information.
+    // Taskbook §1.2 permits this for UI tests; the status bar says so.
+    if is_demo_mode() {
+        state
+            .state
+            .borrow_mut()
+            .apply_snapshot(crate::demo::demo_snapshot());
+        views::refill_all(state);
+        state.i18n.apply_all();
+        details::refresh_selected(state);
+        return;
+    }
     state.state.borrow_mut().begin_loading();
     // Reflect the loading state immediately, without waiting for the worker.
     state.i18n.apply_all();

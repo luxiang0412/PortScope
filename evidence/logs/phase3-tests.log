@@ -1,4 +1,4 @@
-   Compiling portscope-gtk v0.1.0 (/home/luxiang/project/private/PortScope/crates/gtk)
+   Compiling portscope-gtk v0.1.0 (<repo>/crates/gtk)
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
      Running unittests src/main.rs (target/debug/deps/portscope_cli-1cd158c3f04fce06)
 

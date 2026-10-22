@@ -18,7 +18,7 @@ $ grep ' /proc ' /proc/self/mountinfo
 Kernel confirmed: **`hidepid=invisible`** (= hidepid=2). Effect on a normal user:
 
 ```
-$ ps -eo pid,user --no-headers | awk '$2 != "luxiang"' | wc -l
+$ ps -eo pid,user --no-headers | awk '$2 != "<user>"' | wc -l
 0                      # other users' processes are completely invisible
 ```
 

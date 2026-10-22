@@ -282,3 +282,8 @@ msgstr "排序"
 # TRANSLATORS: short label for "follow the system language" in a dropdown.
 msgid "System"
 msgstr "跟随系统"
+
+# TRANSLATORS: shown in the status bar when the app runs with fictional data
+# for screenshots, so the reader knows it is not live system data.
+msgid "Sample data"
+msgstr "示例数据"

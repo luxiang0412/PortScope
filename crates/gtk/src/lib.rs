@@ -16,6 +16,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod demo;
 pub mod i18n;
 pub mod logs;
 pub mod state;

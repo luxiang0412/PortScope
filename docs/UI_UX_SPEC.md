@@ -86,7 +86,7 @@ Acceptance sizes: **1024×600, 1366×768, 1920×1080 CSS**, at 100 / 125 / 150 /
 
 | ID | Defect | Evidence |
 | --- | --- | --- |
-| P0-D2 | At 1024×600 CSS, `GDK_SCALE=1`: only Protocol / Local address / Port visible. **State, Process, PID, Systemd unit unreachable; no horizontal scrollbar.** | `evidence/screenshots/narrow-1024-gdk1.png` |
+| P0-D2 | At 1024×600 CSS, `GDK_SCALE=1`: only Protocol / Local address / Port visible. **State, Process, PID, Systemd unit unreachable; no horizontal scrollbar.** | a Phase 0 capture (removed before publishing: contained LAN addresses) |
 | P0-D3 | "1024×600 unreachable" was a 200 %-scale artifact — at `GDK_SCALE=1` the window reaches exactly 1024×600. | `wmctrl` geometry |
 | P0-D4 | GUI renders `SampleData` only; no real collection path. | `main.rs` |
 
