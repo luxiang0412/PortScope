@@ -39,7 +39,8 @@
     checks reachability (a guessed URL produced url-not-reachable errors).
 
     Consequence: `appstreamcli validate` reports one warning,
-    `url-homepage-missing`, and therefore exits non-zero under --strict.
+    `url-homepage-missing`, and therefore exits non-zero when the validator
+    is run in its strict mode.
     This is recorded in docs/PACKAGING.md as an open item; it must be resolved
     by adding the real repository URL before release.
   -->
