@@ -6,7 +6,7 @@ use crate::endpoints;
 use crate::exec::Cancel;
 use crate::model::*;
 use crate::process as procmod;
-use crate::services::{Backend, collect_services};
+use crate::services::{Backend, collect_services_batched, show_unit};
 use std::collections::HashMap;
 use std::time::SystemTime;
 
@@ -57,6 +57,76 @@ pub fn collect(opts: &CollectOptions) -> Snapshot {
     collect_cancellable(opts, &Cancel::new())
 }
 
+/// Which units must carry detail fields for the association rules to work.
+///
+/// Returns the set of unit ids worth a per-unit query: every socket unit, plus
+/// every unit named by an endpoint's cgroup. This is the set that
+/// `assoc::associate_endpoints_to_units` can actually consult, so querying
+/// beyond it would be cost without effect.
+fn units_needing_detail(
+    endpoints: &[Endpoint],
+    services: &[ServiceInfo],
+) -> Vec<(usize, UnitScope)> {
+    let mut wanted: Vec<(usize, UnitScope)> = Vec::new();
+
+    // Socket units: needed for Triggers= (socket activation) and Listen=.
+    for (i, s) in services.iter().enumerate() {
+        if s.kind == UnitKind::Socket {
+            wanted.push((i, s.scope));
+        }
+    }
+
+    // Units named by an endpoint's cgroup.
+    for ep in endpoints {
+        let Some(cg) = ep.cgroup.as_deref() else {
+            continue;
+        };
+        let Some((leaf, scope)) = crate::assoc::unit_from_cgroup(cg) else {
+            continue;
+        };
+        // A `.socket` cgroup resolves to the service it triggers; both ends may
+        // need detail, and the socket is already included above.
+        for (i, s) in services.iter().enumerate() {
+            if s.id == leaf && s.scope == scope && s.kind != UnitKind::Socket {
+                wanted.push((i, scope));
+            }
+        }
+    }
+
+    wanted.sort_by_key(|(i, _)| *i);
+    wanted.dedup_by_key(|(i, _)| *i);
+    wanted
+}
+
+/// Replace list-level entries with fully-populated ones for the units that
+/// association needs. Failures are reported, never silently swallowed.
+fn enrich_units_for_association(
+    services: &mut [ServiceInfo],
+    endpoints: &[Endpoint],
+    opts: &CollectOptions,
+    errors: &mut Vec<CollectionError>,
+) {
+    let targets = units_needing_detail(endpoints, services);
+    for (idx, scope) in targets {
+        let id = services[idx].id.clone();
+        match show_unit(scope, &id, opts.backend) {
+            Ok(detail) => {
+                // Keep the description/state from the batched listing if the
+                // per-unit path could not supply them.
+                let mut merged = detail;
+                if merged.sub_state.is_empty() {
+                    merged.sub_state = services[idx].sub_state.clone();
+                }
+                services[idx] = merged;
+            }
+            Err(CollectionError::UnitNotFound { .. }) => {
+                // Raced with unit teardown; the listing row stays as it was.
+            }
+            Err(e) => errors.push(e),
+        }
+    }
+}
+
 pub fn collect_cancellable(opts: &CollectOptions, cancel: &Cancel) -> Snapshot {
     let mut snap = Snapshot {
         collected_at: Some(SystemTime::now()),
@@ -88,11 +158,25 @@ pub fn collect_cancellable(opts: &CollectOptions, cancel: &Cancel) -> Snapshot {
     if opts.user_services {
         scopes.push(UnitScope::User);
     }
-    let (services, svc_errors) =
-        collect_services(&scopes, opts.only_units.as_deref(), opts.backend);
+    let (mut services, svc_errors) = collect_services_batched(&scopes, opts.backend);
     for e in svc_errors {
         snap.push_error(e);
     }
+
+    // 2b. Enrich only the units that association actually needs.
+    //
+    // Phase 2 (fixes P1-D1): `ListUnits` gives name/description/state for every
+    // unit in ONE call, but not MainPID/ControlGroup/Listen=/Triggers=. Fetching
+    // those for all ~300 units costs ~27 ms each (one `busctl` spawn per unit),
+    // which is what made a full snapshot take 7-8 s.
+    //
+    // Association only ever consults:
+    //   * `.socket` units (for Triggers=/Listen=), and
+    //   * units named by an endpoint's cgroup (for MainPID/ControlGroup).
+    // So we enrich exactly those, typically a few dozen, and leave the rest as
+    // list-level facts. A field we did not query is not claimed to be empty.
+    enrich_units_for_association(&mut services, &snap.endpoints, opts, &mut snap.errors);
+
     // BUGFIX (found via live CLI run): services were collected but never
     // stored on the snapshot, which made every cgroup-derived unit look
     // "not found". Keep the list so associations can be verified against it.

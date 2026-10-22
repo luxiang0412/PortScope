@@ -1,0 +1,31 @@
+# P1-D1 fix measurement: batched ListUnits vs per-unit D-Bus — 2026-10-22T11:02:13+08:00
+
+## before (Phase 1, per-unit busctl)
+duration_ms = 7927.0  (305 units)
+
+## after (Phase 2, batched ListUnits + targeted enrichment)
+duration_ms  = 1401.0
+endpoints    = 140
+services     = 340
+associations = 235
+== endpoints (first 25) ==
+[permission_denied           ] permission denied for process info for some endpoints: 123/140 endpoints have no process association; PIDs for other users' processes require privilege
+--
+duration_ms  = 1641.7
+endpoints    = 140
+services     = 340
+associations = 235
+== endpoints (first 25) ==
+[permission_denied           ] permission denied for process info for some endpoints: 123/140 endpoints have no process association; PIDs for other users' processes require privilege
+--
+duration_ms  = 1346.1
+endpoints    = 140
+services     = 340
+associations = 235
+== endpoints (first 25) ==
+[permission_denied           ] permission denied for process info for some endpoints: 123/140 endpoints have no process association; PIDs for other users' processes require privilege
+--
+## ListUnits single-call cost
+real	0m0.008s
+user	0m0.002s
+sys	0m0.003s
