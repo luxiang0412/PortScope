@@ -15,6 +15,31 @@
 - AppImage is a possible later candidate; it must not sacrifice system
   integration for "one binary everywhere".
 
+## 1a. What can be built where — measured on this machine
+
+| Target | Buildable here? | Why |
+| --- | --- | --- |
+| `.deb` | **yes** | `dpkg-deb` present; done (see §3a) |
+| `.rpm` | **not installed**, but installable | `rpm` 4.18 is in the apt archive; `rpmbuild` arrives with it |
+| Flatpak | **not installed**, but installable | `flatpak` is present; `flatpak-builder` is in the archive |
+| Wayland verification | **partially** | no Wayland login session, but a headless mutter compositor works (see Phase 5 log) |
+| Debian 13 package | **no** | needs a Debian 13 host/VM; `libc6` differs, so a binary built here will not install there |
+
+**Nothing here requires CI to be useful.** The limits are host-side, and what CI
+adds is *repeatability and other distributions*, not capability:
+
+| Task | Host | CI |
+| --- | --- | --- |
+| `.deb` build + lintian | yes | yes, and reproducible on a clean runner |
+| `.rpm` build | yes, after `apt install rpm` | yes, or better on a Fedora/`rpm` container |
+| Flatpak build | yes, after `flatpak-builder` | yes, with the GNOME runtime from Flathub |
+| Debian 13 test | no | **no** — a container is not a host; the taskbook forbids claiming it |
+| Wayland visual acceptance | no | **no** — deliverable only as an artifact, not a real session |
+
+CI is worth adding for the `.deb` and `.rpm` so that a release artefact can be
+rebuilt from a clean checkout and verified, not because the local machine cannot
+do it.
+
 ## 2. Order of delivery
 
 | Order | Format | Notes |

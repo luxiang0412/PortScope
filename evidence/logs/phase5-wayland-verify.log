@@ -1,0 +1,89 @@
+# Phase 5 — Wayland verification (nested headless GNOME Wayland compositor)
+
+The physical session on this machine is **X11 (`:1`)**, so the desktop session
+was *not* switched. Instead a real **GNOME 46 / mutter Wayland compositor** was
+started headless in a private runtime directory, and PortScope was run inside it.
+
+This is a genuine Wayland session, **not XWayland**: `DISPLAY` is unset and GTK
+reports `GdkWaylandDisplay`.
+
+## Compositor
+
+```
+$ chmod 700 /tmp/wl
+$ XDG_RUNTIME_DIR=/tmp/wl dbus-run-session -- \
+    gnome-shell --headless --wayland --wayland-display=wayland-9 \
+                 --virtual-monitor 1400x900
+
+libmutter-Message: Running GNOME Shell (using mutter 46.2) as a Wayland display server
+libmutter-Message: Using Wayland display name 'wayland-9'
+socket: /tmp/wl/wayland-9
+```
+
+## PortScope inside it (X11 deliberately unavailable)
+
+```
+$ env -u DISPLAY -u XAUTHORITY \
+      XDG_RUNTIME_DIR=/tmp/wl WAYLAND_DISPLAY=wayland-9 GDK_BACKEND=wayland \
+      ./target/release/portscope
+```
+
+Result: process running, nothing on stderr.
+
+## Backend proof — GTK's own report
+
+Wayland run:
+
+```
+display type = GdkWaylandDisplay
+is wayland   = true
+DISPLAY          = Err(NotPresent)
+WAYLAND_DISPLAY  = Ok("wayland-9")
+```
+
+Control run (X11, same probe):
+
+```
+display type = GdkX11Display
+is wayland   = false
+DISPLAY          = Ok(":1")
+WAYLAND_DISPLAY  = Err(NotPresent)
+```
+
+`GdkWaylandDisplay` with `DISPLAY` absent cannot be XWayland, so the app was
+demonstrably rendering through the Wayland backend.
+
+## Data collection under Wayland
+
+```
+$ env -u DISPLAY ... ./target/release/portscope-cli snapshot
+endpoints=142 processes=210 services=365 associations=1715 duration=1219ms
+```
+
+Collection is unaffected by the display backend, as expected (it is UI-agnostic
+and runs off the main loop), and it confirms the process was fully functional
+rather than merely starting.
+
+## What could NOT be verified — stated plainly
+
+- **No screenshot.** mutter does not implement `wlr-screencopy` (so `grim`
+  fails with "compositor doesn't support wlr-screencopy-unstable-v1"), and
+  `org.gnome.Shell.Screenshot` returns `AccessDenied` in a headless session.
+  **There is therefore no visual evidence of Wayland rendering.** The evidence
+  is behavioural: the app runs, GTK reports the Wayland backend, and data is
+  collected.
+- **Not covered:** window placement/sizing on a real output, HiDPI surface scale
+  factors, input-method (IME) behaviour, and fractional scaling under Wayland.
+  A headless compositor with a virtual monitor cannot test these.
+- **This does not by itself satisfy taskbook §9.2.** That gate asks for launch,
+  window layout, search, details, refresh, screenshot feasibility and exit **on
+  a real GNOME Wayland login session**. What this run establishes is narrower
+  but still valuable: it removes the "PortScope has never even started on
+  Wayland" risk, which was the stated unknown.
+
+## Conclusion
+
+Wayland compatibility is **partially verified**: the application launches and
+works under a real Wayland compositor with no X11 fallback. Visual and
+input-related acceptance on a real Wayland login session remains **open** and
+must not be reported as passed.
