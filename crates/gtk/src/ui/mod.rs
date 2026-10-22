@@ -42,8 +42,13 @@ use crate::{APP_ID, APP_VERSION};
 /// uses the page layout, where the table gets the whole width.
 pub const NARROW_BREAKPOINT: i32 = 1400;
 
-/// Minimum width the table is guaranteed in the wide layout.
-const MIN_TABLE_WIDTH: i32 = 480;
+/// Width reserved for the details pane in the wide layout.
+///
+/// A `width_request` on the pane, honoured by GTK when it allocates the split;
+/// `Paned::set_position` was measured to be ignored, so the layout uses a Box.
+/// 360 was too narrow: content overflowed and the per-entry copy button was
+/// pushed outside the window.
+pub const DETAILS_PANE_WIDTH: i32 = 460;
 
 /// Row newtypes so the GObject list stores are typed.
 /// Row storage.
@@ -128,7 +133,7 @@ pub struct App {
 /// Handles needed to switch between wide and narrow presentation.
 #[derive(Clone)]
 pub struct Layout {
-    pub paned: gtk::Paned,
+    pub split: gtk::Box,
     pub stack: gtk::Stack,
     pub details: gtk::Box,
     pub window: adw::ApplicationWindow,
@@ -363,19 +368,22 @@ fn build_ui(app: &adw::Application) {
         .build();
     content_stack.add_named(&stack, Some("list"));
 
-    let paned = gtk::Paned::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .wide_handle(true)
-        .vexpand(true)
-        .hexpand(true)
-        .build();
-    paned.set_start_child(Some(&content_stack));
-    paned.set_resize_start_child(true);
-    paned.set_shrink_start_child(false);
-    paned.set_position(820);
+    // A horizontal Box, not a GtkPaned.
+    //
+    // Measured: with a Paned, `set_position` was silently ignored (asked for
+    // 1098, stayed at 1078) and the details pane was allocated 475 px while its
+    // content drew past the window edge. GTK's Paned allocates from child
+    // natural sizes, which fought every position we set. A Box with an
+    // expanding table and a fixed-width details pane is deterministic — the
+    // same lesson the Spike recorded in its decision D9.
+    let split = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    split.set_vexpand(true);
+    split.set_hexpand(true);
+    split.append(&content_stack);
+    split.append(&details_box);
+    content_stack.set_hexpand(true);
 
-    // Wide layout by default: details beside the table.
-    paned.set_end_child(Some(&details_box));
+    // Wide layout by default: details sits beside the table (appended above).
 
     let status_label = gtk::Label::builder()
         .xalign(0.0)
@@ -389,7 +397,7 @@ fn build_ui(app: &adw::Application) {
 
     let body = gtk::Box::new(gtk::Orientation::Vertical, 0);
     body.append(&banner);
-    body.append(&paned);
+    body.append(&split);
     body.append(&status_label);
 
     let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -400,7 +408,7 @@ fn build_ui(app: &adw::Application) {
     window.set_content(Some(&toast_overlay));
 
     *state.layout.borrow_mut() = Some(Layout {
-        paned: paned.clone(),
+        split: split.clone(),
         stack: content_stack.clone(),
         details: details_box.clone(),
         window: window.clone(),
@@ -867,55 +875,31 @@ fn wire_responsive(state: &Rc<App>) {
     let state_w = state.clone();
     let layout_w = layout.clone();
     // Fires on every width change, including the first allocation.
-    layout.paned.add_tick_callback(move |paned, _clock| {
-        let width = paned.width();
+    layout.split.add_tick_callback(move |split, _clock| {
+        let width = split.width();
         if width <= 0 {
             return glib::ControlFlow::Continue;
         }
         let want_narrow = width < NARROW_BREAKPOINT;
-        if want_narrow == *state_w.narrow.borrow() {
-            return glib::ControlFlow::Continue;
-        }
-        *state_w.narrow.borrow_mut() = want_narrow;
-
-        if want_narrow {
-            // Move the details pane out of the split and make it a page, so the
-            // table keeps the full width. This is the actual P0-D2 fix.
-            layout_w.paned.set_end_child(None::<&gtk::Widget>);
-            if layout_w.stack.child_by_name("details").is_none() {
-                layout_w.stack.add_named(&layout_w.details, Some("details"));
+        if want_narrow != *state_w.narrow.borrow() {
+            *state_w.narrow.borrow_mut() = want_narrow;
+            if want_narrow {
+                // Details becomes its own page so the table keeps full width.
+                layout_w.split.remove(&layout_w.details);
+                if layout_w.stack.child_by_name("details").is_none() {
+                    layout_w.stack.add_named(&layout_w.details, Some("details"));
+                }
+                layout_w.stack.set_visible_child_name("list");
+                set_secondary_columns(&state_w, false);
+            } else {
+                if let Some(page) = layout_w.stack.child_by_name("details") {
+                    layout_w.stack.remove(&page);
+                }
+                layout_w.split.append(&layout_w.details);
+                set_secondary_columns(&state_w, true);
             }
-            layout_w.stack.set_visible_child_name("list");
-            // Drop the secondary columns so the remaining ones stay readable,
-            // instead of squeezing all of them into "…".
-            set_secondary_columns(&state_w, false);
-        } else {
-            // Put the details pane back beside the table.
-            if let Some(page) = layout_w.stack.child_by_name("details") {
-                layout_w.stack.remove(&page);
-            }
-            layout_w.paned.set_end_child(Some(&layout_w.details));
-            let total = layout_w.paned.width();
-            let pos = total.saturating_sub(360).max(MIN_TABLE_WIDTH);
-            layout_w.paned.set_position(pos);
-            set_secondary_columns(&state_w, true);
         }
         glib::ControlFlow::Continue
-    });
-
-    // Never let the pane crush the table.
-    layout.paned.connect_position_notify(|p| {
-        let total = p.width();
-        if total <= 0 {
-            return;
-        }
-        let min_table = MIN_TABLE_WIDTH;
-        if total - p.position() < min_table {
-            let want = (total - min_table).max(min_table / 2);
-            if want != p.position() {
-                p.set_position(want);
-            }
-        }
     });
 }
 

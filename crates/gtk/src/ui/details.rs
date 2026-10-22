@@ -19,7 +19,13 @@ use crate::ui::App;
 /// rebuild it without any global registry.
 pub fn build_details_box(state: &Rc<App>) -> gtk::Box {
     let outer = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    outer.set_width_request(320);
+    outer.set_width_request(crate::ui::DETAILS_PANE_WIDTH);
+    // Without a cap the pane grows to the natural width of its widest child
+    // (typically a long cgroup path), pushing content past the window edge and
+    // hiding the per-entry copy button. The labels wrap, so a cap is safe.
+    outer.set_size_request(420, -1);
+    outer.set_halign(gtk::Align::Fill);
+    outer.set_hexpand(false);
 
     let scroller = gtk::ScrolledWindow::builder()
         .vexpand(true)
@@ -27,12 +33,18 @@ pub fn build_details_box(state: &Rc<App>) -> gtk::Box {
         .hscrollbar_policy(gtk::PolicyType::Never)
         .build();
 
+    // A ScrolledWindow with `hscrollbar_policy: Never` does not narrow its
+    // child: the child keeps its natural width and simply gets clipped. Clamp
+    // the content to the pane explicitly so every label is forced to wrap.
     let content = gtk::Box::new(gtk::Orientation::Vertical, 12);
     content.set_margin_top(12);
     content.set_margin_bottom(12);
     content.set_margin_start(12);
     content.set_margin_end(12);
+    content.set_halign(gtk::Align::Fill);
+    content.set_hexpand(true);
     scroller.set_child(Some(&content));
+    scroller.set_propagate_natural_width(false);
 
     outer.append(&scroller);
     state.details_content.borrow_mut().replace(content);
@@ -138,21 +150,17 @@ fn section(title: &str) -> gtk::Label {
 }
 
 fn render_fields(content: &gtk::Box, fields: &[Field]) {
-    let grid = gtk::Grid::builder()
-        .column_spacing(12)
-        .row_spacing(6)
-        .hexpand(true)
-        .build();
-    for (i, f) in fields.iter().enumerate() {
-        let label = gtk::Label::builder()
-            .label(&f.label)
-            .xalign(0.0)
-            .valign(gtk::Align::Start)
-            .build();
+    // Deliberately NOT a GtkGrid: a grid sizes each column to the natural width
+    // of its widest child, so a long cgroup path or IPv6 address made the pane
+    // wider than the window and pushed content (including the per-entry copy
+    // button) past the right edge. A vertical box of rows lets the value label
+    // expand and wrap within the pane instead.
+    for f in fields {
+        let row = gtk::Box::new(gtk::Orientation::Vertical, 1);
+
+        let label = gtk::Label::builder().label(&f.label).xalign(0.0).build();
         label.add_css_class("field-label");
 
-        // `wrap_mode(WordChar)` breaks long cgroup paths and IPv6 addresses
-        // that have no spaces, instead of pushing the pane wider.
         let value = gtk::Label::builder()
             .label(&f.value)
             .xalign(0.0)
@@ -171,10 +179,10 @@ fn render_fields(content: &gtk::Box, fields: &[Field]) {
             value.add_css_class("dim");
         }
 
-        grid.attach(&label, 0, i as i32, 1, 1);
-        grid.attach(&value, 1, i as i32, 1, 1);
+        row.append(&label);
+        row.append(&value);
+        content.append(&row);
     }
-    content.append(&grid);
 }
 
 fn render_evidence(content: &gtk::Box, evidence: &[String]) {
@@ -456,6 +464,32 @@ fn render_logs(container: &gtk::Box, outcome: &crate::logs::LogOutcome) {
 
     match outcome {
         LogOutcome::Entries(entries) => {
+            // Level filter + text search, both bounded by what was already
+            // fetched (never a new query per keystroke).
+            let level_dd = gtk::DropDown::from_strings(
+                &LogLevel::all()
+                    .iter()
+                    .map(|l| l.label())
+                    .collect::<Vec<_>>(),
+            );
+            level_dd.set_selected(1); // Info
+            level_dd.set_tooltip_text(Some(&tr("Log entries")));
+
+            let search = gtk::SearchEntry::builder()
+                .placeholder_text(tr("Search ports, processes, services…"))
+                .hexpand(true)
+                .build();
+
+            // The level chip is short; the search field takes the rest.
+            level_dd.set_size_request(96, -1);
+            let bar = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+            bar.append(&level_dd);
+            bar.append(&search);
+            container.append(&bar);
+
+            let list = gtk::Box::new(gtk::Orientation::Vertical, 8);
+            container.append(&list);
+
             let header = gtk::Label::builder()
                 .label(tr("Last 15 minutes"))
                 .xalign(0.0)
@@ -463,32 +497,100 @@ fn render_logs(container: &gtk::Box, outcome: &crate::logs::LogOutcome) {
             header.add_css_class("dim");
             container.append(&header);
 
-            for e in entries.iter().take(200) {
-                let row = gtk::Box::new(gtk::Orientation::Vertical, 2);
-                let meta = gtk::Label::builder()
-                    .label(format!(
-                        "{} {}",
-                        format_ts(e.timestamp_usec),
-                        e.priority_label()
-                    ))
-                    .xalign(0.0)
-                    .build();
-                meta.add_css_class("dim");
-                meta.add_css_class("mono");
+            let rerender = {
+                let entries = entries.clone();
+                let list = list.clone();
+                move |level: LogLevel, query: &str| {
+                    while let Some(child) = list.first_child() {
+                        list.remove(&child);
+                    }
+                    let kept = filter_entries(&entries, level, query);
+                    if kept.is_empty() {
+                        let l = gtk::Label::builder()
+                            .label(tr("No log entries in this window."))
+                            .xalign(0.0)
+                            .wrap(true)
+                            .build();
+                        l.add_css_class("dim");
+                        list.append(&l);
+                        return;
+                    }
+                    for e in kept.into_iter().take(200) {
+                        let meta = gtk::Label::builder()
+                            .label(format!(
+                                "{} {}",
+                                format_ts(e.timestamp_usec),
+                                e.priority_label()
+                            ))
+                            .xalign(0.0)
+                            .build();
+                        meta.add_css_class("dim");
+                        meta.add_css_class("mono");
 
-                // Journal text is shown verbatim and never translated.
-                let msg = gtk::Label::builder()
-                    .label(&e.message)
-                    .xalign(0.0)
-                    .wrap(true)
-                    .wrap_mode(gtk::pango::WrapMode::WordChar)
-                    .selectable(true)
-                    .build();
-                msg.add_css_class("mono");
+                        // Journal text is shown verbatim and never translated.
+                        let msg = gtk::Label::builder()
+                            .label(&e.message)
+                            .xalign(0.0)
+                            .wrap(true)
+                            .wrap_mode(gtk::pango::WrapMode::WordChar)
+                            .selectable(true)
+                            .build();
+                        msg.add_css_class("mono");
 
-                row.append(&meta);
-                row.append(&msg);
-                container.append(&row);
+                        // Per-entry copy (§5.6): copies the original text only.
+                        let copy_btn = gtk::Button::builder()
+                            .icon_name("edit-copy-symbolic")
+                            .tooltip_text(tr("Copy entry"))
+                            .valign(gtk::Align::Start)
+                            .has_frame(false)
+                            .build();
+                        let text = e.message.clone();
+                        copy_btn.connect_clicked(move |_| {
+                            if let Some(display) = gtk::gdk::Display::default() {
+                                display.clipboard().set_text(&text);
+                            }
+                        });
+
+                        // Copy sits on the meta line: the message label wraps
+                        // to fill the width, so putting the button beside it
+                        // would squeeze the button out of view.
+                        let meta_line = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+                        meta.set_hexpand(true);
+                        meta_line.append(&meta);
+                        meta_line.append(&copy_btn);
+
+                        let row = gtk::Box::new(gtk::Orientation::Vertical, 2);
+                        row.append(&meta_line);
+                        row.append(&msg);
+                        list.append(&row);
+                    }
+                }
+            };
+            rerender(LogLevel::Info, "");
+
+            let rerender = std::rc::Rc::new(std::cell::RefCell::new(rerender));
+            {
+                let r = rerender.clone();
+                let search_c = search.clone();
+                level_dd.connect_selected_notify(move |d| {
+                    let level = LogLevel::all()
+                        .get(d.selected() as usize)
+                        .copied()
+                        .unwrap_or(LogLevel::Info);
+                    let q = search_c.text().to_string();
+                    (r.borrow_mut())(level, &q);
+                });
+            }
+            {
+                let r = rerender.clone();
+                let level_c = level_dd.clone();
+                search.connect_search_changed(move |s| {
+                    let level = LogLevel::all()
+                        .get(level_c.selected() as usize)
+                        .copied()
+                        .unwrap_or(LogLevel::Info);
+                    (r.borrow_mut())(level, &s.text());
+                });
             }
 
             let note = gtk::Label::builder()
@@ -557,6 +659,69 @@ fn render_logs(container: &gtk::Box, outcome: &crate::logs::LogOutcome) {
     }
 }
 
+/// Minimum severity shown in the log view (taskbook §5.6 "级别筛选").
+///
+/// syslog priorities run 0 (emerg) .. 7 (debug); "at least this severe" means
+/// `priority <= threshold`. Entries with no priority are treated as `notice`
+/// so they are not silently hidden by a filter the user did not aim at them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warning,
+    Error,
+}
+
+impl LogLevel {
+    pub fn threshold(self) -> u8 {
+        match self {
+            // debug = 7, so everything passes.
+            LogLevel::Debug => 7,
+            LogLevel::Info => 6,
+            LogLevel::Warning => 4,
+            LogLevel::Error => 3,
+        }
+    }
+
+    pub fn all() -> &'static [LogLevel] {
+        &[
+            LogLevel::Debug,
+            LogLevel::Info,
+            LogLevel::Warning,
+            LogLevel::Error,
+        ]
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            LogLevel::Debug => "Debug",
+            LogLevel::Info => "Info",
+            LogLevel::Warning => "Warning",
+            LogLevel::Error => "Error",
+        }
+    }
+}
+
+/// Keep entries at or above the selected severity, and matching the text query.
+pub fn filter_entries<'a>(
+    entries: &'a [portscope_core::model::JournalEntry],
+    level: LogLevel,
+    query: &str,
+) -> Vec<&'a portscope_core::model::JournalEntry> {
+    let q = query.trim().to_lowercase();
+    let threshold = level.threshold();
+    entries
+        .iter()
+        .filter(|e| {
+            let prio = e.priority.unwrap_or(5); // notice
+            if prio > threshold {
+                return false;
+            }
+            q.is_empty() || e.message.to_lowercase().contains(&q)
+        })
+        .collect()
+}
+
 /// Format a journal timestamp (`__REALTIME_TIMESTAMP`, microseconds) for display.
 ///
 /// Deliberately simple and locale-independent (UTC `HH:MM:SS`): reformatting into
@@ -598,6 +763,69 @@ pub fn format_freshness(f: Freshness) -> &'static str {
         Freshness::Fresh => "fresh",
         Freshness::Stale => "stale",
         Freshness::Unknown => "unknown",
+    }
+}
+
+#[cfg(test)]
+mod log_filter_tests {
+    use super::{LogLevel, filter_entries};
+    use portscope_core::model::JournalEntry;
+
+    fn entry(prior: Option<u8>, msg: &str) -> JournalEntry {
+        JournalEntry {
+            timestamp_usec: 1,
+            priority: prior,
+            message: msg.into(),
+            identifier: None,
+            pid: None,
+            unit: None,
+        }
+    }
+
+    #[test]
+    fn level_filter_keeps_at_or_above_severity() {
+        let e = vec![
+            entry(Some(7), "debug detail"),
+            entry(Some(6), "info"),
+            entry(Some(4), "warning"),
+            entry(Some(3), "error"),
+        ];
+        assert_eq!(filter_entries(&e, LogLevel::Debug, "").len(), 4);
+        assert_eq!(filter_entries(&e, LogLevel::Info, "").len(), 3);
+        assert_eq!(filter_entries(&e, LogLevel::Warning, "").len(), 2);
+        assert_eq!(filter_entries(&e, LogLevel::Error, "").len(), 1);
+    }
+
+    #[test]
+    fn entries_without_priority_are_treated_as_notice() {
+        // A filter must not silently hide entries whose priority is unknown.
+        let e = vec![entry(None, "no priority")];
+        assert_eq!(filter_entries(&e, LogLevel::Info, "").len(), 1);
+        // ...but an Error-only filter does exclude them, which is correct.
+        assert_eq!(filter_entries(&e, LogLevel::Error, "").len(), 0);
+    }
+
+    #[test]
+    fn text_query_is_case_insensitive_substring() {
+        let e = vec![
+            entry(Some(6), "Started Session 13"),
+            entry(Some(6), "Stopped"),
+        ];
+        assert_eq!(filter_entries(&e, LogLevel::Info, "session").len(), 1);
+        assert_eq!(filter_entries(&e, LogLevel::Info, "SESSION").len(), 1);
+        assert_eq!(filter_entries(&e, LogLevel::Info, "zzz").len(), 0);
+        assert_eq!(filter_entries(&e, LogLevel::Info, "   ").len(), 2);
+    }
+
+    #[test]
+    fn level_and_text_combine_as_and() {
+        let e = vec![
+            entry(Some(3), "critical failure"),
+            entry(Some(7), "debug failure"),
+        ];
+        let got = filter_entries(&e, LogLevel::Warning, "failure");
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].message, "critical failure");
     }
 }
 
