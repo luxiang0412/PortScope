@@ -31,7 +31,20 @@ say() { printf '%s\n' "$*"; }
 
 # --- 1. build -------------------------------------------------------------
 say "==> Building release binaries"
-cargo build --release -p portscope-gtk -p portscope-cli
+
+# Reproducibility: the source directory must not influence the binary.
+#
+# Two things leak it:
+#   1. `CARGO_MANIFEST_DIR` baked in by `env!()`  -> removed from the source
+#      (the dev catalogue path is now relative).
+#   2. debug/provenance paths from the workspace   -> remapped here.
+#
+# The remap target must be a FIXED token, not `$ROOT`: remapping to the actual
+# path made the compiler invocation itself differ per checkout (measured:
+# identical sources in two directories produced a 1279288 vs 1278680 byte
+# binary). A fixed target makes the invocation identical everywhere.
+RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$ROOT=/portscope" \
+    cargo build --release -p portscope-gtk -p portscope-cli
 [ -x target/release/portscope ] || { echo "error: binary missing" >&2; exit 1; }
 
 # --- 2. stage the filesystem ---------------------------------------------

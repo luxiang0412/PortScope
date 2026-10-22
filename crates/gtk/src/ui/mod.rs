@@ -228,10 +228,26 @@ fn localedir() -> Option<String> {
             return Some(resolved.to_string_lossy().into_owned());
         }
     }
-    // Development layout: crates/gtk/po
-    let dev = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("po");
-    if dev.join("zh_CN/LC_MESSAGES/portscope.mo").exists() {
-        return Some(dev.to_string_lossy().into_owned());
+    // Development layout.
+    //
+    // Deliberately NOT `env!("CARGO_MANIFEST_DIR")`: that bakes the absolute
+    // build path into the binary as a string literal, so two builds of identical
+    // sources from different directories produce different bytes (verified with
+    // `strings`; `--remap-path-prefix` does not affect `env!`). The relative
+    // fallback below keeps developer runs working without leaking the path.
+    for candidate in [
+        // Running from the workspace: target/{debug,release}/portscope
+        std::path::PathBuf::from("crates/gtk/po"),
+    ] {
+        if candidate.join("zh_CN/LC_MESSAGES/portscope.mo").exists() {
+            return Some(
+                candidate
+                    .canonicalize()
+                    .unwrap_or(candidate)
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
     }
     None
 }
