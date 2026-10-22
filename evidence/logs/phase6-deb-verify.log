@@ -25,11 +25,23 @@ W: portscope: initial-upload-closes-no-bugs
   All E: errors and permission warnings were fixed (see below).
 
 ## Reproducibility
-$ ./scripts/build-deb.sh ; sha256sum ...
-$ ./scripts/build-deb.sh ; sha256sum ...
-19d131c3fbe83d8dfe806e5800bb339e5db436592a0131c99b32242800c1e5a0  (both)
-  Byte-identical. dpkg-deb stamps ar members with the build time unless
-  SOURCE_DATE_EPOCH is set; without it two builds differed.
+Three separate causes were found and fixed; only then did builds match.
+
+1. dpkg-deb stamps ar members with the build time.
+   -> SOURCE_DATE_EPOCH is now set by the script.
+
+2. `env!("CARGO_MANIFEST_DIR")` baked the absolute source path into the binary,
+   so building the same source from two directories gave different bytes
+   (1279288 vs 1278680). `--remap-path-prefix` does NOT affect `env!`.
+   -> the development catalogue path is now relative.
+
+3. My own first attempt remapped to `$ROOT`, which made the compiler invocation
+   itself differ per checkout. Corrected and documented in the script.
+
+Final check, two independent checkouts, full rebuilds:
+  main:  ee6a8042d49d2d515507fd3c7d73f497a1e372b96f3ad5e26f640b457a436631
+  clone: ee6a8042d49d2d515507fd3c7d73f497a1e372b96f3ad5e26f640b457a436631
+  Byte-identical.
 
 ## Install (real system install, not a simulation)
 $ sudo dpkg -i dist/portscope_0.1.0_amd64.deb
