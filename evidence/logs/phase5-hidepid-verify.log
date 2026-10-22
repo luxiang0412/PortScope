@@ -1,0 +1,82 @@
+# Phase 5 — `hidepid=2` graceful-degradation verification
+
+Taskbook §9.4: *"support graceful degradation. When other users' process details
+cannot be read, show the permission limit and unknown fields. Do not describe
+this scenario as full support; tests must cover it."*
+
+This was previously marked **unverified** because no `hidepid=2` host was
+available. It has now been tested on a real `hidepid=2` mount on this machine.
+
+## How the condition was created
+
+```
+$ sudo mount -o remount,hidepid=2 /proc
+$ grep ' /proc ' /proc/self/mountinfo
+29 33 0:26 / /proc rw,nosuid,nodev,noexec,relatime shared:13 - proc proc rw,hidepid=invisible
+```
+
+Kernel confirmed: **`hidepid=invisible`** (= hidepid=2). Effect on a normal user:
+
+```
+$ ps -eo pid,user --no-headers | awk '$2 != "luxiang"' | wc -l
+0                      # other users' processes are completely invisible
+```
+
+Reverted afterwards with `mount -o remount,hidepid=0 /proc` (verified: 730
+processes visible again), so the machine was left as found.
+
+## Result with hidepid=2
+
+CLI snapshot:
+
+```
+endpoints    = 140          # unchanged  (from ss -e, no privilege needed)
+processes    = 153          # down from ~200
+services     = 363          # unchanged
+associations = 1521         # down from ~2020
+degraded     = true
+```
+
+Reported cause:
+
+```
+permission_denied: 122/140 endpoints have no owning process
+                   (120 hidden by permissions, 2 socket units held by systemd)
+```
+
+GUI: launches, shows all 140 endpoints and 363 services, no crash, no panic and
+no GLib critical, status bar reads `140 端口 · 104 进程 · 363 服务 · 权限不足 (122)`.
+Screenshot: `evidence/screenshots/phase5-hidepid2.png`.
+
+## What still works, and what does not
+
+| Capability | hidepid=2 | Notes |
+| --- | --- | --- |
+| Endpoint list (address, port, state) | **works** | from `ss -e` |
+| Socket owner UID | **works** | `uid:` is exposed unprivileged |
+| Socket cgroup | **works** | `cgroup:` is exposed unprivileged |
+| **Endpoint → service association** | **works** | cgroup-based, needs no `/proc` |
+| Service list and unit state | **works** | systemd D-Bus |
+| Endpoint → process (PID, name) | **fails** | `/proc/<pid>` is inaccessible |
+| Command line of other users' processes | **fails** | same reason |
+
+This distinction matters: the product's central value — *which service owns this
+port, and what is the evidence* — survives `hidepid=2`. Only the process-level
+detail is lost, and the UI says so explicitly.
+
+## Honesty check
+
+- The condition was created on a real mount, not simulated by a fake `/proc`.
+- The failure is attributed correctly. The message separates "hidden by
+  permissions" (120) from "socket unit held by systemd" (2) instead of blaming
+  permissions for both.
+- No endpoint row is shown with a fabricated PID, and no service association is
+  invented to fill the gap.
+- After reverting, behaviour returns to normal (2/139 unowned), so the degraded
+  numbers above are caused by `hidepid` and nothing else.
+
+## Scope limit
+
+This covers `hidepid=2` on Ubuntu 24.04 for the current user. It does not cover
+`hidepid=1`, `gid=`-based exemptions, or a system where `/proc` is restricted by
+a different mechanism (e.g. a hardened kernel module). Those remain unverified.
