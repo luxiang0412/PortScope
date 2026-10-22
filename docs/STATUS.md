@@ -194,13 +194,13 @@ only by comparison tests.
 | LICENSE | **DONE** | MIT (`LICENSE`, `license` field in every crate) |
 | Packaging (`.deb`/`.rpm`), CI, desktop file, icons | **absent** | Phase 6 |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
-| ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1** | see `exec.rs` |
+| ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1**, hardened in Phase 3 | timeout was not actually bounding (61s vs 5s) until grandchildren stopped holding the pipe; see `exec.rs` |
 | Full-collection latency (7–8 s) | **open, Phase 2** | P1-D1; blocks 5 s auto-refresh |
 | ~~GUI real-data path~~ | **DONE in Phase 2** | real `collect()` wired via worker thread |
 | ~~Settings page (§5.7)~~ | **DONE** | language, auto-refresh, privacy scope, About |
 | ~~1024×600 layout~~ | **DONE in Phase 2** | narrow layout + hidden secondary columns |
 | ~~Filter / sort widgets~~ | **DONE** | toolbar: protocol / family / unknown-owner + sort column & direction |
-| Stale / failure screenshots | **not captured** | logic unit-tested; needs an induced failure |
+| ~~Stale / failure screenshots~~ | **DONE** | induced a real `ss` timeout; see `phase3-en-collection-failed.png` |
 | ~~In-app language switch~~ | **DONE + verified** | switch updates main *and* settings window; `language=zh_CN` survives restart |
 | ~~Log level filter / single-entry copy~~ | **DONE** | severity dropdown, text search, per-entry copy button |
 
