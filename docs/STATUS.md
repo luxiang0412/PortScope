@@ -5,8 +5,10 @@
 > `PortScope-v1.0-Development-Taskbook.md` has been met with saved evidence.**
 > Unverified items are listed as unverified, never as done.
 
-Last updated: Phase 2 (GTK UI productionisation & layout fixes) — **awaiting
-product owner review before Phase 3 starts.**
+Last updated: **0.1.0 preview release.** Phases 0–2 and the parts of 3–6 that do
+not need additional hardware are complete. The two formal release gates
+(real Wayland login session, Debian 13) remain **unverified** and are listed
+below; they are the reason this is tagged a preview rather than 1.0.
 
 ---
 

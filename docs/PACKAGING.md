@@ -168,13 +168,8 @@ app came up in English. The path is now canonicalised.
 
 ## 4. Packaging blockers to resolve before Phase 6
 
-0. **Repository is private.** The metainfo carries the real homepage and
-   bugtracker URLs (`https://github.com/luxiang0412/PortScope`), but AppStream
-   verifies reachability and GitHub returns 404 for a private repository, so
-   `appstreamcli validate` reports `url-not-reachable`. No change to the package
-   is needed: making the repository public resolves it. CI tolerates exactly
-   these two findings until then, and the allowance is written down rather than
-   silently applied.
+0. ~~Repository is private.~~ **Resolved.** The repository is public, so
+   `appstreamcli validate` passes with no findings and CI enforces it strictly.
 1. **Rust toolchain vs edition 2024.** Ubuntu 24.04 ships **rustc 1.75.0**;
    edition 2024 requires **≥ 1.85**. A distro-native build is therefore
    impossible with the distro rustc. Options: target edition 2021 for distro

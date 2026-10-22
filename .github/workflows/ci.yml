@@ -142,28 +142,8 @@ jobs:
       - name: desktop-file-validate
         run: desktop-file-validate data/desktop/io.github.portscope.app.desktop
       - name: appstreamcli validate
-        # `url-homepage-missing` is a recorded open item (docs/PACKAGING.md): the
-        # project had no public repository when the metainfo was written, and
-        # appstreamcli exits 3 on any warning. Every other finding must fail.
-        run: |
-          set +e
-          appstreamcli validate data/metainfo/io.github.portscope.app.metainfo.xml > /tmp/as.txt 2>&1
-          rc=$?
-          cat /tmp/as.txt
-          # url-not-reachable: the homepage is the real repository URL, but
-          # AppStream checks reachability and GitHub returns 404 for a private
-          # repository. Remove this allowance once the repository is public -
-          # that is the actual fix, not a flag.
-          unexpected=$(grep -E '^(E|W):' /tmp/as.txt \
-                       | grep -vcE 'url-homepage-missing|url-not-reachable')
-          if [ "$unexpected" -ne 0 ]; then
-            echo "::error::unexpected appstream findings ($unexpected)"
-            exit 1
-          fi
-          if grep -qE '^E:' /tmp/as.txt; then
-            echo "::error::appstream reported errors"
-            exit 1
-          fi
-          echo "only known-accepted findings (private-repo URLs); rc=$rc"
+        # The repository is public, so the metainfo URLs resolve and the
+        # validator passes outright. No allowances: this is the real gate.
+        run: appstreamcli validate data/metainfo/io.github.portscope.app.metainfo.xml
       - name: No unexpected licence change
         run: test -f LICENSE && grep -q 'MIT License' LICENSE
