@@ -41,7 +41,51 @@ Measured on the target baseline (Ubuntu 24.04):
 Minimum versions must be stated explicitly in the package metadata and README;
 runtime `pkg-config`/`pkg-config --atleast-version` checks at build time.
 
-## 3a. Install/uninstall scripts — implemented and verified
+## 3a. Debian package — implemented and verified
+
+```bash
+./scripts/build-deb.sh          # -> dist/portscope_<version>_<arch>.deb
+sudo dpkg -i dist/portscope_*.deb
+sudo dpkg -r portscope
+```
+
+Verified on this machine: build → lintian → real `dpkg -i` → launch from
+`/usr/bin` with real data → `dpkg -r` with no residue. Evidence:
+`evidence/logs/phase6-deb-verify.log`.
+
+**Dependencies are derived, then corrected.** `dpkg-shlibdeps` reports only the
+ELF soname floors (`libgtk-4-1 (>= 4.12.0)`, `libadwaita-1-0 (>= 1.3~alpha)`),
+which would let the package install on a system where the binary cannot run. The
+script raises them to the API level actually compiled against:
+
+| Requirement | Value | Why |
+| --- | --- | --- |
+| `libgtk-4-1` | `>= 4.14` | crate built with `features = ["v4_14"]` |
+| `libadwaita-1-0` | `>= 1.5` | crate built with `features = ["v1_5"]` |
+| `libc6` | `>= 2.39` | from `dpkg-shlibdeps` on this build |
+| `Recommends: iproute2, systemd` | — | PortScope starts without them and reports the missing tool, so they must not be hard dependencies |
+
+**libc floor — a real compatibility limit.** Because `libc6 (>= 2.39)` is
+required:
+
+| Distribution | libc | Installs? |
+| --- | --- | --- |
+| Ubuntu 24.04 | 2.39 | yes |
+| Debian 13 | 2.41 | yes (expected; not yet tested on a real host) |
+| Debian 12 | 2.36 | **no** |
+
+A binary for an older libc must be built on that release. One binary cannot
+serve all of them, and this package does not claim to.
+
+**Reproducible.** `SOURCE_DATE_EPOCH` is set by the script, so two builds of the
+same source are byte-identical (verified by comparing sha256 of two runs).
+Without it, `dpkg-deb` stamps the archive members with the build time and every
+build differs.
+
+**lintian** reports one warning: `initial-upload-closes-no-bugs`. That is
+expected for a first upload with no upstream bug tracker.
+
+## 3b. Install/uninstall scripts — implemented and verified
 
 `scripts/install.sh` / `scripts/uninstall.sh` install into `~/.local` by default
 and need **no root**, matching the unprivileged model. Verified from a clean

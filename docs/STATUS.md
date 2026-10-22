@@ -196,7 +196,9 @@ only by comparison tests.
 | Install / uninstall scripts | **DONE** | unprivileged (~/.local); verified end to end |
 | README / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT | **DONE** | |
 | CI pipeline | **DONE** (unrun) | `.github/workflows/ci.yml`, 3 jobs; steps reproduced locally from a clean clone |
-| `.deb` / `.rpm` / Flatpak packages | **absent** | Phase 6 remaining |
+| **`.deb` package** | **DONE** | lintian-clean apart from `initial-upload-closes-no-bugs`; installed and run from `/usr/bin`; byte-reproducible |
+| `.rpm` / Flatpak | **absent** | remaining |
+| `libc6 >= 2.39` floor | **limitation** | Debian 12 cannot install this build; per-release builds needed |
 | metainfo homepage URL | **missing** | no public repository yet; `url-homepage-missing` warning |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
 | ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1**, hardened in Phase 3 | timeout was not actually bounding (61s vs 5s) until grandchildren stopped holding the pipe; see `exec.rs` |

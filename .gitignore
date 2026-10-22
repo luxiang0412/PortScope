@@ -13,3 +13,6 @@ Cargo.lock.bak
 
 # Compiled catalogues are build outputs, not sources
 *.mo
+
+# Debian package build output
+/dist/

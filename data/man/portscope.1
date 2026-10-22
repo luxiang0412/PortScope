@@ -1,0 +1,80 @@
+.\" Man page for portscope.
+.TH PORTSCOPE 1 "2026-10-22" "portscope 0.1.0" "User Commands"
+.SH NAME
+portscope \- inspect local ports, processes, systemd services and journal logs
+.SH SYNOPSIS
+.B portscope
+.SH DESCRIPTION
+.B PortScope
+shows which local TCP and UDP endpoints are listening, which process owns each
+one, which systemd unit that process belongs to, and what the journal says
+about it.
+.PP
+Every endpoint\(hyservice link carries the evidence that produced it: a socket
+inode seen in the process file descriptor table, a cgroup match, a
+.B MainPID
+match, socket activation via
+.BR Triggers= ,
+or a
+.B Listen=
+match. PortScope never infers an association from a port number, a process
+name or a unit description. When there is no evidence it reports that no
+association could be confirmed.
+.PP
+The application runs entirely as the invoking user. It does not request root,
+does not use
+.BR sudo ,
+.BR pkexec
+or polkit, does not modify group membership, and performs no network access.
+.SH OPTIONS
+.TP
+.B \-\-help
+Show a summary of options.
+.TP
+.B \-\-version
+Show the version.
+.SH PERMISSIONS
+Endpoint data, the socket owner UID and the socket cgroup are available to any
+user, because
+.B ss \-e
+exposes them. For endpoints owned by other users the owning process is usually
+recovered through
+.BR /sys/fs/cgroup/<unit>/cgroup\.procs ,
+which is world readable.
+.PP
+The system journal is readable only if the user is a member of
+.B adm
+or
+.B systemd\-journal.
+PortScope reports this as a permission limitation and continues to show the
+remaining diagnostics; it does not present an unreadable journal as an empty
+one, and it will not add you to any group.
+.PP
+Reading
+.B /proc/<pid>/cmdline
+of other users requires that
+.B hidepid
+is not set to 2. When it is, the command line is reported as unavailable.
+.SH KEYBOARD
+.TP
+.B Ctrl+F
+Focus the search field.
+.TP
+.B Ctrl+R
+Collect the current state immediately.
+.TP
+.B Esc
+Leave the details page in the narrow layout.
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/portscope/settings.ini
+User preferences (language). No collected data is ever written to disk.
+.SH SEE ALSO
+.BR portscope-cli (1),
+.BR ss (8),
+.BR systemctl (1),
+.BR journalctl (1)
+.SH BUGS
+No public bug tracker exists yet.
+.SH LICENSE
+MIT.

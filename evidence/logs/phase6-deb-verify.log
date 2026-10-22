@@ -1,0 +1,73 @@
+# Phase 6: .deb build / lintian / install / run / uninstall verification
+# Performed on the real system, from this repository.
+
+## Build
+$ ./scripts/build-deb.sh
+  -> dist/portscope_0.1.0_amd64.deb  (543 KiB, Installed-Size 2252 KiB)
+
+## Package metadata (derived, not guessed)
+Depends:      libadwaita-1-0 (>= 1.5), libgtk-4-1 (>= 4.14),
+              libc6 (>= 2.39), libgcc-s1 (>= 4.2),
+              libglib2.0-0t64 (>= 2.80), libpango-1.0-0
+Recommends:   iproute2, systemd
+
+The GTK/libadwaita floors come from the crate feature gates actually compiled
+(v4_14 / v1_5); dpkg-shlibdeps alone reports only 4.12.0 / 1.3~alpha, which
+would let the package install on a system where it cannot run.
+iproute2/systemd are Recommends, not Depends: without them PortScope starts and
+reports the missing tool instead of failing to install.
+
+## lintian
+$ lintian --tag-display-limit 0 dist/portscope_0.1.0_amd64.deb
+W: portscope: initial-upload-closes-no-bugs
+  Only remaining warning. Expected for a first upload with no bug number; there
+  is no upstream bug tracker to reference yet.
+  All E: errors and permission warnings were fixed (see below).
+
+## Reproducibility
+$ ./scripts/build-deb.sh ; sha256sum ...
+$ ./scripts/build-deb.sh ; sha256sum ...
+19d131c3fbe83d8dfe806e5800bb339e5db436592a0131c99b32242800c1e5a0  (both)
+  Byte-identical. dpkg-deb stamps ar members with the build time unless
+  SOURCE_DATE_EPOCH is set; without it two builds differed.
+
+## Install (real system install, not a simulation)
+$ sudo dpkg -i dist/portscope_0.1.0_amd64.deb
+  Setting up portscope (0.1.0-1) ... ok, no dependency errors.
+$ dpkg -s portscope  -> Status: install ok installed
+
+## Registered correctly
+$ which portscope portscope-cli
+  /usr/bin/portscope  /usr/bin/portscope-cli
+$ man -w portscope portscope-cli
+  /usr/share/man/man1/portscope.1.gz  /usr/share/man/man1/portscope-cli.1.gz
+$ ls /usr/share/applications/io.github.portscope.app.desktop  -> present
+
+## Run the installed binary
+$ portscope
+  -> launched from /usr/bin, real data: 141 ports / 284 processes / 362 services
+  -> permission limits reported honestly (2 ssh.socket endpoints)
+  Screenshot: evidence/screenshots/phase6-deb-installed-run.png
+
+## Uninstall
+$ sudo dpkg -r portscope
+  -> /usr/bin/portscope, desktop entry, icons, man pages all removed
+  -> mimeinfo.cache no longer references portscope
+
+## Defects found by this verification (all fixed)
+1. umask leak: with umask 0002 the staged tree had 0775 directories and a 0664
+   .mo. The script now sets umask 0022 and normalises the tree. lintian
+   non-standard-dir-perm / non-standard-file-perm gone.
+2. Missing changelog (lintian E: no-changelog). Added data/changelog.Debian.
+3. Wrong weekday in the changelog. 2026-10-22 is a Thursday.
+4. Missing and then uncompressed man pages (lintian E: no-manual-page,
+   E: uncompressed-manual-page). Added and gzipped with -n.
+5. Non-reproducible output. Fixed with SOURCE_DATE_EPOCH.
+
+## Compatibility limit that must be stated
+libc6 (>= 2.39) is required, from dpkg-shlibdeps on this build.
+  Ubuntu 24.04 (2.39) - installs
+  Debian 13   (2.41) - installs
+  Debian 12   (2.36) - will NOT install
+A package for an older libc must be built on that release; a single binary
+cannot serve them all.

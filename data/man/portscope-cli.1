@@ -1,0 +1,70 @@
+.\" Man page for portscope-cli.
+.TH PORTSCOPE-CLI 1 "2026-10-22" "portscope 0.1.0" "User Commands"
+.SH NAME
+portscope-cli \- reproducible diagnostic snapshots for PortScope
+.SH SYNOPSIS
+.B portscope-cli
+.RI [ snapshot " [\-\-json " PATH "]]"
+.br
+.B portscope-cli
+.B journal
+.RI [ UNIT ]
+.RI [ system | user ]
+.br
+.B portscope-cli compare-backends
+.br
+.B portscope-cli \-\-help
+.SH DESCRIPTION
+.B portscope-cli
+exposes the data collection used by the graphical application so that
+diagnostics can be scripted and reproduced without a display server. It is the
+same code path the application uses.
+.SH COMMANDS
+.TP
+.B snapshot
+Collect endpoints, processes, services and their associations, and print a
+summary. Errors are listed by their stable machine code.
+.TP
+.BI "snapshot \-\-json " PATH
+Additionally write the complete snapshot as JSON to
+.IR PATH .
+.TP
+.BI journal " [UNIT] [SCOPE]"
+Query recent journal entries, optionally filtered to one unit. The outcome is
+reported as one of
+.BR entries ,
+.BR EMPTY ,
+.B DENIED
+or an error, because
+.B journalctl
+exits with status 0 for permission denial, an empty result and a malformed
+query alike; the outcome is therefore decided from its output, not its exit
+status.
+.TP
+.B compare-backends
+Cross-check systemd unit state and cost between the D-Bus and
+.B systemctl
+backends. Any disagreement is a defect and causes a non-zero exit.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+A query failed.
+.TP
+.B 2
+Invalid arguments.
+.SH EXAMPLES
+.TP
+.B portscope-cli snapshot \-\-json /tmp/snapshot.json
+Capture a snapshot for a bug report.
+.TP
+.B portscope-cli journal ssh.service system
+Show recent entries for a system unit.
+.SH SEE ALSO
+.BR portscope (1),
+.BR ss (8),
+.BR journalctl (1)
+.SH LICENSE
+MIT.
