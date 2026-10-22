@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nothing in this workflow uses a secret, and nothing should need write access.
+permissions:
+  contents: read
+
+jobs:
+  # Everything here runs with no display server, which is the point: the core
+  # and the presentation model must be testable in CI (docs/TESTING.md).
+  test:
+    name: Test (no display server)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-4-dev libadwaita-1-dev gettext build-essential dbus
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: rustfmt
+        run: cargo fmt --all --check
+
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: test
+        # --test-threads=1 because some tests touch real /proc and systemd.
+        run: cargo test -- --test-threads=1
+
+      - name: build release binaries
+        run: cargo build --release -p portscope-gtk -p portscope-cli
+
+  translations:
+    name: Translations
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gettext
+        run: sudo apt-get update && sudo apt-get install -y gettext
+      - name: Validate .po files
+        run: |
+          fail=0
+          for po in crates/gtk/po/*.po; do
+            echo "::group::$po"
+            msgfmt --check-format --check-domain -o /dev/null "$po" || fail=1
+            # Untranslated entries (excluding the header) are a release blocker.
+            missing=$(msgattrib --untranslated --no-obsolete "$po" \
+                      | grep '^msgid' | grep -v '^msgid ""' | wc -l)
+            if [ "$missing" -ne 0 ]; then
+              echo "::error file=$po::$missing untranslated entries"
+              msgattrib --untranslated --no-obsolete "$po" | grep '^msgid' | head -20
+              fail=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
+  packaging-metadata:
+    name: Desktop entry, metainfo, licence
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y desktop-file-utils appstream
+      - name: desktop-file-validate
+        run: desktop-file-validate data/desktop/io.github.portscope.app.desktop
+      - name: appstreamcli validate
+        # --strict until the repository URL exists: `url-homepage-missing` is a
+        # recorded open item (docs/PACKAGING.md), not something to hide.
+        run: appstreamcli validate data/metainfo/io.github.portscope.app.metainfo.xml
+      - name: No unexpected licence change
+        run: test -f LICENSE && grep -q 'MIT License' LICENSE

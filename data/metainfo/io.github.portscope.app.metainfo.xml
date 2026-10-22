@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.portscope.app</id>
+
+  <name>PortScope</name>
+  <summary>Inspect local ports, processes, systemd services and journal logs</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      PortScope answers a focused question: which local TCP/UDP endpoints are
+      listening, which process owns each one, which systemd unit that process
+      belongs to, and what the journal says about it.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>List IPv4 and IPv6 TCP/UDP endpoints with owner process, user and unit.</li>
+      <li>Show the evidence behind every endpoint-to-service link.</li>
+      <li>Read bounded journal logs for a selected unit.</li>
+      <li>Copy a diagnostic summary that excludes full command lines.</li>
+      <li>English and Simplified Chinese, light and dark themes.</li>
+    </ul>
+    <p>
+      PortScope runs entirely as the invoking user. It does not request root,
+      modify groups, open the network, or send telemetry. Some information,
+      such as the system journal, may be unavailable depending on your
+      permissions; PortScope says so explicitly rather than showing an empty
+      result.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.portscope.app.desktop</launchable>
+
+  <!--
+    No homepage/bugtracker URL yet: the project has no public repository.
+    Adding a guessed URL would be a false claim, and `appstreamcli validate`
+    checks reachability (a guessed URL produced url-not-reachable errors).
+
+    Consequence: `appstreamcli validate` reports one warning,
+    `url-homepage-missing`, and therefore exits non-zero under --strict.
+    This is recorded in docs/PACKAGING.md as an open item; it must be resolved
+    by adding the real repository URL before release.
+  -->
+
+  <developer id="io.github.portscope">
+    <name>PortScope contributors</name>
+  </developer>
+
+  <content_rating type="oars-1.1"/>
+
+  <categories>
+    <category>System</category>
+    <category>Monitor</category>
+    <category>Network</category>
+  </categories>
+
+  <keywords>
+    <keyword>port</keyword>
+    <keyword>process</keyword>
+    <keyword>service</keyword>
+    <keyword>systemd</keyword>
+    <keyword>journal</keyword>
+    <keyword>socket</keyword>
+    <keyword>network</keyword>
+    <keyword>diagnostics</keyword>
+  </keywords>
+
+  <requires>
+    <!-- GTK 4.14 / libadwaita 1.5 are the versions the binary is built against. -->
+    <display_length compare="ge">600</display_length>
+  </requires>
+
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </recommends>
+
+  <releases>
+    <release version="0.1.0" date="2026-10-22" type="development">
+      <description>
+        <p>Development snapshot. Core collection, evidence-based association,
+           the three views, journal display, localisation and settings are
+           implemented. Packaging and distribution verification are pending.</p>
+      </description>
+    </release>
+  </releases>
+</component>

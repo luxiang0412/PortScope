@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=PortScope
+GenericName=Port Inspector
+Comment=Inspect local ports, processes, systemd services and journal logs
+Exec=portscope
+Icon=io.github.portscope.app
+Terminal=false
+Categories=System;Monitor;
+Keywords=port;process;service;systemd;journal;socket;network;
+StartupNotify=true
+StartupWMClass=io.github.portscope.app
+
+# PortScope runs as the invoking user and never requests privileges.
+# It must not be launched as root.
+X-GNOME-UsesNotifications=false

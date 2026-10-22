@@ -215,9 +215,17 @@ fn localedir() -> Option<String> {
         && let Some(dir) = exe.parent()
     {
         // <prefix>/bin/portscope -> <prefix>/share/locale
+        //
+        // The path must be *canonical*: glibc's gettext does not resolve `..`
+        // in a bindtextdomain directory, so passing `prefix/bin/../share/locale`
+        // silently failed to find the catalogue and an installed PortScope came
+        // up in English despite a saved zh_CN preference.
         let candidate = dir.join("../share/locale");
         if candidate.join("zh_CN/LC_MESSAGES/portscope.mo").exists() {
-            return Some(candidate.to_string_lossy().into_owned());
+            let resolved = candidate
+                .canonicalize()
+                .unwrap_or_else(|_| candidate.clone());
+            return Some(resolved.to_string_lossy().into_owned());
         }
     }
     // Development layout: crates/gtk/po

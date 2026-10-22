@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PortScope application icon.
+
+  Design: a magnifier over a port socket, using the libadwaita accent blue.
+  Deliberately flat and simple so it reads at 16 px and does not depend on
+  colour alone for its meaning (the shape is a lens, not a coloured dot).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3584e4"/>
+      <stop offset="1" stop-color="#1c71d8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded square background -->
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#bg)"/>
+
+  <!-- socket ring: the "port" -->
+  <circle cx="54" cy="54" r="24" fill="none" stroke="#ffffff" stroke-width="7"/>
+  <circle cx="54" cy="54" r="9" fill="#ffffff"/>
+
+  <!-- lens handle, forming a magnifier -->
+  <line x1="73" y1="73" x2="99" y2="99"
+        stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+</svg>
