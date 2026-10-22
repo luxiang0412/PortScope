@@ -24,7 +24,7 @@ pub fn present(state: &Rc<App>) {
         .transient_for(&layout.window)
         .modal(false)
         .title(tr("Settings"))
-        .default_width(640)
+        .default_width(720)
         .default_height(560)
         .build();
 
@@ -74,7 +74,8 @@ pub fn present(state: &Rc<App>) {
     // libadwaita 1.5 exposes no public accessor for the internal dropdown (that
     // arrives later), so the widget is located by walking; if the internal
     // structure changes the request is simply skipped rather than panicking.
-    reserve_combo_width(&lang_row, 180);
+    lang_row.set_subtitle_lines(2);
+    reserve_combo_width(&lang_row, 200);
     lang_group.add(&lang_row);
     lang_page.add(&lang_group);
 
@@ -159,6 +160,73 @@ pub fn present(state: &Rc<App>) {
     lang_page.add(&privacy_group);
 
     window.add(&lang_page);
+
+    // Retranslation: the window is built once, so each localisable string is
+    // registered with the registry. Without this the settings window stayed in
+    // the previous language while the main window switched — a real defect
+    // found by switching language with the window open.
+    {
+        let registry = state.i18n.clone();
+        let window = window.clone();
+        let lang_row = lang_row.clone();
+        let refresh_row = refresh_row.clone();
+        let now_row = now_row.clone();
+        let now_btn = now_btn.clone();
+        let privacy_row = privacy_row.clone();
+        let privacy_note = privacy_note.clone();
+        let lang_group = lang_group.clone();
+        let refresh_group = refresh_group.clone();
+        let privacy_group = privacy_group.clone();
+
+        let lang_row_c = lang_row.clone();
+        let refresh_row_c = refresh_row.clone();
+        registry.register(move || {
+            window.set_title(Some(&tr("Settings")));
+
+            // Selection must survive the model swap, so read it first.
+            let lang_sel = lang_row_c.selected();
+            lang_row_c.set_model(Some(&gtk::StringList::new(&[
+                tr("System").as_str(),
+                Lang::En.endonym(),
+                Lang::ZhCn.endonym(),
+            ])));
+            lang_row_c.set_selected(lang_sel);
+
+            let refresh_sel = refresh_row_c.selected();
+            refresh_row_c.set_model(Some(&gtk::StringList::new(&[
+                tr("Off").as_str(),
+                tr("5 seconds").as_str(),
+                tr("10 seconds").as_str(),
+                tr("30 seconds").as_str(),
+            ])));
+            refresh_row_c.set_selected(refresh_sel);
+            lang_group.set_title(&tr("Language"));
+            refresh_group.set_title(&tr("Refresh"));
+            privacy_group.set_title(&tr("Diagnostic summary contents"));
+
+            lang_row.set_title(&tr("Language"));
+            lang_row.set_subtitle(&tr(
+                "The manual choice overrides the system language and is kept after restart.",
+            ));
+
+            refresh_row.set_title(&tr("Auto-refresh"));
+            refresh_row.set_subtitle(&tr(
+                "A refresh keeps your selection and filters, and marks data stale if it fails.",
+            ));
+
+            now_row.set_title(&tr("Refresh"));
+            now_row.set_subtitle(&tr("Collect the current state immediately."));
+            now_btn.set_label(&tr("Refresh"));
+
+            privacy_row.set_title(&tr("Diagnostic summary contents"));
+            privacy_row.set_subtitle(&tr(
+                "The summary includes ports, processes, services, evidence and collection time. It does not include full command lines.",
+            ));
+            privacy_note.set_title(&tr(
+                "Raw values are shown exactly as reported by the system and are not translated.",
+            ));
+        });
+    }
 
     window.present();
 }

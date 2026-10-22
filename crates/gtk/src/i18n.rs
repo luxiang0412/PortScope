@@ -357,6 +357,31 @@ mod tests {
         assert_eq!(tr("Ports"), "Ports");
     }
 
+    /// Regression: GTK calls `setlocale(LC_ALL, "")` during initialisation,
+    /// which silently overwrote a locale applied before `app.run()`. A saved
+    /// preference of zh_CN therefore came up in English.
+    ///
+    /// The fix re-applies the locale inside `activate`. This test documents the
+    /// underlying hazard: applying the locale twice must be idempotent, which is
+    /// what makes the "apply early, then apply again" strategy safe.
+    #[test]
+    fn applying_the_locale_twice_is_idempotent() {
+        let _guard = locale_lock();
+        let dev = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("po");
+        if !dev.join("zh_CN/LC_MESSAGES/portscope.mo").exists() {
+            return;
+        }
+        let dir = dev.to_string_lossy().to_string();
+        init_gettext(Lang::ZhCn, Some(&dir)).expect("first apply");
+        assert_eq!(tr("Ports"), "端口");
+        init_gettext(Lang::ZhCn, Some(&dir)).expect("second apply");
+        assert_eq!(
+            tr("Ports"),
+            "端口",
+            "re-applying must not lose the catalogue"
+        );
+    }
+
     /// Raw technical values must not be translated even when a catalogue is
     /// active (taskbook §6.2).
     #[test]

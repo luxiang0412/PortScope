@@ -173,18 +173,34 @@ impl App {
 pub fn run() -> glib::ExitCode {
     let setting = load_lang_setting().unwrap_or(LangSetting::System);
     let lang = setting.resolve(&process_env());
-    // A missing catalogue must not stop the app: fall back to English and let
-    // the UI report it, rather than crashing (taskbook §6.3).
+
+    // Apply the locale *before* GTK starts, and again inside `activate`.
+    //
+    // GTK calls `setlocale(LC_ALL, "")` during initialisation, which overwrites
+    // whatever we set before `app.run()`. Initialising only early meant a saved
+    // preference of zh_CN was silently ignored at startup and the app came up in
+    // English. Verified with a probe: `tr("Ports")` returned "端口" before GTK
+    // and "Ports" inside startup/activate.
+    apply_locale(lang);
+
+    let app = adw::Application::builder().application_id(APP_ID).build();
+    app.connect_startup(|_| load_css());
+    app.connect_activate(move |app| {
+        // Re-apply: GTK has reset the locale by this point.
+        apply_locale(lang);
+        build_ui(app);
+    });
+    app.run()
+}
+
+/// Initialise gettext for `lang`, falling back to English if the catalogue or
+/// the locale is unavailable. A failure must never stop the app (taskbook §6.3).
+fn apply_locale(lang: Lang) {
     if lang != Lang::En && init_gettext(lang, localedir().as_deref()).is_err() {
         let _ = init_gettext(Lang::En, localedir().as_deref());
     } else {
         let _ = init_gettext(lang, localedir().as_deref());
     }
-
-    let app = adw::Application::builder().application_id(APP_ID).build();
-    app.connect_startup(|_| load_css());
-    app.connect_activate(build_ui);
-    app.run()
 }
 
 /// Where the compiled `.mo` catalogues live.
