@@ -80,15 +80,15 @@ The packaged binary runs and collects real data.
 Two builds made after the fixes are byte-identical:
 
 ```
-44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  build 1
-44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  build 2
+68e5d45b5de78a8742575423dc7aeca4f4c24d54ece9fc717d3a4b81bdef7f69  build 1
+68e5d45b5de78a8742575423dc7aeca4f4c24d54ece9fc717d3a4b81bdef7f69  build 2
 ```
 
 And identical when built from an independent checkout:
 
 ```
-44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  main repo
-44eb18dbe13f8cbc5a6c1031d37fef317f5129b50790e61ab40a29e3c95c4937  clean clone
+68e5d45b5de78a8742575423dc7aeca4f4c24d54ece9fc717d3a4b81bdef7f69  main repo
+68e5d45b5de78a8742575423dc7aeca4f4c24d54ece9fc717d3a4b81bdef7f69  clean clone
 ```
 
 It took three attempts. Findings:

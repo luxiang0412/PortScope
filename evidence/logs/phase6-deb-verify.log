@@ -39,8 +39,8 @@ Three separate causes were found and fixed; only then did builds match.
    itself differ per checkout. Corrected and documented in the script.
 
 Final check, two independent checkouts, full rebuilds:
-  main:  ee6a8042d49d2d515507fd3c7d73f497a1e372b96f3ad5e26f640b457a436631
-  clone: ee6a8042d49d2d515507fd3c7d73f497a1e372b96f3ad5e26f640b457a436631
+  main:  245562a135b3f01cf67c6b5f0147a9949e97e03cc3a5b8827b19946075bacb43
+  clone: 245562a135b3f01cf67c6b5f0147a9949e97e03cc3a5b8827b19946075bacb43
   Byte-identical.
 
 ## Install (real system install, not a simulation)
