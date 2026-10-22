@@ -41,8 +41,32 @@ Measured on the target baseline (Ubuntu 24.04):
 Minimum versions must be stated explicitly in the package metadata and README;
 runtime `pkg-config`/`pkg-config --atleast-version` checks at build time.
 
+## 3a. Install/uninstall scripts — implemented and verified
+
+`scripts/install.sh` / `scripts/uninstall.sh` install into `~/.local` by default
+and need **no root**, matching the unprivileged model. Verified from a clean
+clone: build → install (15 files) → launch the installed binary → it renders
+real data in Chinese (catalogue found via `<prefix>/share/locale`) → uninstall
+leaves nothing behind.
+
+Where the app looks for translations:
+
+```
+<prefix>/share/locale/<lang>/LC_MESSAGES/portscope.mo   (installed)
+crates/gtk/po/<lang>/LC_MESSAGES/portscope.mo           (development)
+```
+
+The installed path must be **canonical**: glibc gettext does not resolve `..`,
+so `prefix/bin/../share/locale` silently missed the catalogue and the installed
+app came up in English. The path is now canonicalised.
+
 ## 4. Packaging blockers to resolve before Phase 6
 
+0. **No public repository URL yet.** `data/metainfo/...metainfo.xml` has no
+   `<url type="homepage">` because no repository exists, so
+   `appstreamcli validate` reports `url-homepage-missing`. A guessed URL was
+   tried and rejected (`url-not-reachable`), which is worse. Add the real URL
+   before release.
 1. **Rust toolchain vs edition 2024.** Ubuntu 24.04 ships **rustc 1.75.0**;
    edition 2024 requires **≥ 1.85**. A distro-native build is therefore
    impossible with the distro rustc. Options: target edition 2021 for distro

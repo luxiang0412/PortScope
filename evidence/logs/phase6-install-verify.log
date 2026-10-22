@@ -1,0 +1,49 @@
+# Phase 6: install / run / uninstall verification
+# Performed from a CLEAN CLONE, not the working tree.
+
+## 1. Fresh clone
+$ git clone <repo> /tmp/ci-sim && cd /tmp/ci-sim
+
+## 2. CI job 1 — no display server
+$ cargo fmt --all --check                  -> OK
+$ cargo clippy --workspace --all-targets -- -D warnings -> OK
+$ cargo test -- --test-threads=1           -> 63 + 14 + 59 + 1 = 137 passed, 0 failed
+$ cargo build --release -p portscope-gtk -p portscope-cli -> OK
+
+## 3. CI job 2 — translations
+msgfmt --check-format --check-domain crates/gtk/po/zh_CN.po -> OK
+untranslated entries: 0
+
+## 4. CI job 3 — metadata
+$ desktop-file-validate data/desktop/io.github.portscope.app.desktop -> OK
+$ appstreamcli validate data/metainfo/io.github.portscope.app.metainfo.xml
+  -> 1 warning: url-homepage-missing (documented open item, no repo yet)
+$ test -f LICENSE && grep -q 'MIT License' LICENSE -> OK
+
+## 5. Install into a temp prefix (no root)
+$ PREFIX=/tmp/final-install ./scripts/install.sh
+  Installed 15 files: 2 binaries, desktop entry, metainfo, 7 icon sizes +
+  scalable, zh_CN catalogue, caches.
+
+## 6. Launch the INSTALLED binary
+$ HOME=/tmp/final-home  (settings.ini: language=zh_CN)
+$ /tmp/final-install/bin/portscope
+  -> runs, real data: 140 ports / 203 processes / 361 services
+  -> interface in Simplified Chinese, proving the catalogue was found in
+     <prefix>/share/locale rather than the development tree.
+  Screenshot: evidence/screenshots/phase6-installed-run-zh.png
+
+## 7. Uninstall
+$ PREFIX=/tmp/final-install ./scripts/uninstall.sh
+  -> no files remain under the prefix
+  -> settings kept (documented behaviour; --purge removes them)
+
+## Defects found by this verification (all fixed)
+1. CRLF line endings: core.autocrlf=true converted the .desktop file on
+   checkout, and desktop-file-validate rejected it. Added .gitattributes.
+2. Illegal XML comment ('--strict' contains a double hyphen) made the metainfo
+   unparseable. Fixed.
+3. gettext does not resolve '..' in a bindtextdomain directory, so an installed
+   PortScope started in English despite language=zh_CN. Path is now
+   canonicalised.
+4. uninstall.sh left two generated cache files behind. Fixed.
