@@ -211,6 +211,18 @@ impl Retranslatable {
 mod tests {
     use super::*;
     use portscope_core::model::ActiveState;
+    use std::sync::{Mutex, MutexGuard, OnceLock};
+
+    /// `setlocale` and the gettext catalogue are **process-global**, so any test
+    /// that switches language must not run concurrently with another. These two
+    /// helpers serialise them; without this the tests interfere and fail
+    /// intermittently depending on thread scheduling.
+    fn locale_lock() -> MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+    }
 
     fn env(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
         pairs
@@ -328,6 +340,7 @@ mod tests {
     /// silently left the whole UI in English.
     #[test]
     fn full_locale_names_are_tried_and_catalogue_loads() {
+        let _guard = locale_lock();
         let dev = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("po");
         let mo = dev.join("zh_CN/LC_MESSAGES/portscope.mo");
         if !mo.exists() {
@@ -348,6 +361,7 @@ mod tests {
     /// active (taskbook §6.2).
     #[test]
     fn raw_identifiers_are_not_in_the_catalogue() {
+        let _guard = locale_lock();
         let dev = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("po");
         if !dev.join("zh_CN/LC_MESSAGES/portscope.mo").exists() {
             return;
