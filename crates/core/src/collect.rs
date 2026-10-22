@@ -190,6 +190,28 @@ pub fn collect_cancellable(opts: &CollectOptions, cancel: &Cancel) -> Snapshot {
         }
     }
     let mut cgroup_of_candidate: HashMap<u32, String> = HashMap::new();
+
+    // 3a. The endpoint's OWN cgroup, straight from `ss -e`.
+    //
+    // This is the cheapest and most accurate source and it was previously
+    // unused for process discovery: `ss -e` reports `cgroup:` for every socket
+    // including root-owned ones, and `cgroup.procs` is world-readable. Without
+    // this, every socket owned by another user looked like "permission denied"
+    // even though its owning process was trivially recoverable.
+    for ep in &snap.endpoints {
+        let Some(cg) = ep.cgroup.as_deref() else {
+            continue;
+        };
+        if let Ok(pids) = procmod::pids_in_cgroup(cg) {
+            for p in pids {
+                candidates.push(p);
+                cgroup_of_candidate.insert(p, cg.to_string());
+            }
+        }
+    }
+
+    // 3b. Units whose cgroup we can derive, for endpoints without a cgroup
+    // (e.g. the `/proc/net` fallback path).
     for s in &services {
         if s.kind == UnitKind::Socket {
             continue;
@@ -268,12 +290,37 @@ pub fn collect_cancellable(opts: &CollectOptions, cancel: &Cancel) -> Snapshot {
     }
     if invisible_count > 0 && total > 0 {
         snap.degraded = true;
+        // Attribute the gap honestly. Most remaining owners are not hidden by
+        // permissions: a socket held by systemd (`.socket` activation) has no
+        // owning process *by design* until it is triggered. Calling that
+        // "permission denied" would be wrong and would train users to ignore
+        // the warning.
+        let socket_held = snap
+            .endpoints
+            .iter()
+            .filter(|e| {
+                let owned = snap.associations.iter().any(|a| {
+                    matches!(&a.kind,
+                        AssociationKind::EndpointToProcess { endpoint, .. }
+                            if *endpoint == e.key())
+                });
+                !owned && e.cgroup.as_deref().is_some_and(|c| c.ends_with(".socket"))
+            })
+            .count();
+        let permission_related = invisible_count.saturating_sub(socket_held);
+
+        let hint = if permission_related == 0 {
+            format!(
+                "{invisible_count}/{total} endpoints have no owning process; {socket_held} are socket units held by systemd and have no process until activated",
+            )
+        } else {
+            format!(
+                "{invisible_count}/{total} endpoints have no owning process ({permission_related} hidden by permissions, {socket_held} socket units held by systemd)",
+            )
+        };
         snap.push_error(CollectionError::PermissionDenied {
             resource: "process info for some endpoints".into(),
-            hint: format!(
-                "{}/{} endpoints have no process association; PIDs for other users' processes require privilege",
-                invisible_count, total
-            ),
+            hint,
         });
     }
 

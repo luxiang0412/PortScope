@@ -24,6 +24,38 @@ product owner review before Phase 3 starts.**
 
 ---
 
+## Major correctness fix — endpoint ownership (P2-D1)
+
+The first Phase 2 build reported **124 of 141 endpoints** as having no owning
+process, labelled "permission denied". That attribution was **wrong**: the app
+was not using the evidence it already had.
+
+* `ss -e` reports `cgroup:` for every socket, including root-owned ones.
+* `/sys/fs/cgroup/<unit>/cgroup.procs` is **world-readable**.
+
+So the owner was recoverable without any privilege. Two defects hid it:
+
+1. `collect()` only derived PIDs from the *service list*, never from the
+   endpoint's own cgroup.
+2. `associate_endpoints_to_processes()` consulted the cgroup join **only when no
+   `ss -p` hint existed**; a hint pointing at an uninspectable PID therefore
+   suppressed the cgroup join entirely, producing no association.
+
+| Metric | Before | After |
+| --- | --- | --- |
+| Endpoints with an owner | 17 / 141 | **139 / 141** |
+| Associations | 239 | ~1 670 |
+| Processes inspected | 112 | 189 |
+
+The 2 remaining are `ssh.socket` (port 22), which is **correct**: the socket is
+held by systemd and has no owning process until it is triggered. The error text
+now distinguishes "hidden by permissions" from "socket unit held by systemd"
+instead of calling both "permission denied".
+
+Evidence: `evidence/logs/phase2-owner-fix.log`,
+`evidence/screenshots/phase2-en-owners-fixed.png`, regression test
+`cgroup_join_runs_even_when_a_pid_hint_exists`.
+
 ## Phase 2 result — the app is now usable
 
 | Check | Result |

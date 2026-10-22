@@ -324,11 +324,18 @@ pub fn associate_endpoints_to_processes(
             }
         }
 
-        // (c) cgroup match between socket and process
-        if let (Some(scg), false) = (ep.cgroup.as_deref(), identities.is_empty()) {
+        // (c) cgroup match between socket and process.
+        //
+        // This runs even when (a)/(b) already produced an identity: the cgroup
+        // is an independent join, and restricting it to the "no identity yet"
+        // case meant an endpoint whose `ss -p` hint pointed at a process we
+        // could not inspect ended up with NO association at all, even though
+        // its cgroup unambiguously named an owner. That accounted for most of
+        // the spurious "permission denied" endpoints.
+        if let Some(scg) = ep.cgroup.as_deref() {
             for p in processes {
                 if let Some(pcg) = pid_cgroups.get(&p.pid) {
-                    if pcg == scg {
+                    if pcg == scg && !identities.iter().any(|i| i.pid == p.pid) {
                         if let Some(ticks) = p.start_time_ticks {
                             identities.push(ProcessIdentity {
                                 pid: p.pid,
@@ -703,6 +710,54 @@ mod tests {
             assoc.is_empty(),
             "inactive socket unit must not be credited: {:#?}",
             assoc
+        );
+    }
+
+    /// Regression: the cgroup join used to be skipped whenever an `ss -p` hint
+    /// had already produced an identity, and it was never consulted at all when
+    /// the hint pointed at a process we could not inspect. The result was that
+    /// endpoints whose cgroup *unambiguously* named an owner were reported as
+    /// "permission denied" — 124 of 141 endpoints on a real machine.
+    #[test]
+    fn cgroup_join_runs_even_when_a_pid_hint_exists() {
+        let e = ep(
+            Protocol::Udp,
+            "172.30.0.1",
+            9993,
+            Some("/system.slice/zerotier-one.service"),
+            Some(7),
+        );
+        let p = ProcessInfo {
+            pid: 3262,
+            name: "zerotier-one".into(),
+            cmdline: None,
+            uid: Some(997),
+            user: Some("zerotier-one".into()),
+            ppid: Some(1),
+            start_time_ticks: Some(2140),
+            source: PidSource::CgroupProcs,
+        };
+        // An `ss -p` hint for a pid we never managed to inspect.
+        let mut hints = std::collections::HashMap::new();
+        hints.insert(e.key(), 99_999u32);
+        let inode_hits = std::collections::HashMap::new();
+        let mut cgroups = std::collections::HashMap::new();
+        cgroups.insert(3262u32, "/system.slice/zerotier-one.service".to_string());
+
+        let out = associate_endpoints_to_processes(&[e], &[p], &hints, &inode_hits, &cgroups);
+        assert_eq!(out.len(), 1, "cgroup must still resolve the owner");
+        match &out[0].kind {
+            AssociationKind::EndpointToProcess { identity, .. } => {
+                assert_eq!(identity.pid, 3262);
+            }
+            other => panic!("wrong kind: {other:?}"),
+        }
+        assert!(
+            out[0]
+                .evidence
+                .iter()
+                .any(|x| x.kind == EvidenceKind::CgroupUnitMatch),
+            "the cgroup evidence must be recorded"
         );
     }
 

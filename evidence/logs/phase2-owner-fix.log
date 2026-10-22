@@ -1,0 +1,16 @@
+# 端点归属修复：cgroup 证据链 — 2026-10-22T11:42:28+08:00
+
+## 修复前（Phase 2 初版）
+endpoints=141 processes=112 associations=239  无主=124/141
+
+## 修复后
+== PortScope snapshot ==
+collected_at = Some(SystemTime { tv_sec: 1792640548, tv_nsec: 348500397 })
+duration_ms  = 1235.7
+endpoints    = 141
+processes    = 189
+services     = 350
+associations = 1670
+degraded     = true
+
+[permission_denied           ] permission denied for process info for some endpoints: 2/141 endpoints have no owning process; 2 are socket units held by systemd and have no process until activated
