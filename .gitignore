@@ -1,0 +1,12 @@
+# Rust
+/target/
+**/target/
+Cargo.lock.bak
+
+# Build leftovers
+*.mo
+!crates/gtk/po/*.mo
+
+# Local scratch
+*.tmp
+.DS_Store

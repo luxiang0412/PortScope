@@ -1,0 +1,62 @@
+== PortScope snapshot ==
+collected_at = Some(SystemTime { tv_sec: 1792630657, tv_nsec: 943106514 })
+duration_ms  = 2350.8
+endpoints    = 142
+processes    = 159
+services     = 305
+associations = 322
+degraded     = true
+
+== endpoints (first 25) ==
+PROTO STATE   LOCAL                          PORT      UID PID        UNIT(cgroup-derived)
+udp  UNCONN  0.0.0.0%<iface>                40636      982 -          sing-box.service
+udp  UNCONN  0.0.0.0%<iface>                41252      982 -          sing-box.service
+udp  UNCONN  0.0.0.0%<iface>                41761      982 -          sing-box.service
+udp  UNCONN  0.0.0.0                       58386     1000 1835       rustdesk.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>             9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>   9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>                 9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>     9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>             9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>                9993      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>    59428      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>            59428      997 -          zerotier-one.service
+udp  UNCONN  <private-ipv4>%<iface>  59428      997 -          zerotier-one.service
+... 117 more
+
+== association evidence samples ==
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "0.0.0.0", port: 40636 }, unit: "sing-box.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/sing-box.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "0.0.0.0", port: 41252 }, unit: "sing-box.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/sing-box.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "0.0.0.0", port: 41761 }, unit: "sing-box.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/sing-box.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "0.0.0.0", port: 58386 }, unit: "rustdesk.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/rustdesk.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "<private-ipv4>", port: 9993 }, unit: "zerotier-one.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/zerotier-one.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "<private-ipv4>", port: 9993 }, unit: "zerotier-one.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/zerotier-one.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "<private-ipv4>", port: 9993 }, unit: "zerotier-one.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/zerotier-one.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "<private-ipv4>", port: 9993 }, unit: "zerotier-one.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/zerotier-one.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "<private-ipv4>", port: 9993 }, unit: "zerotier-one.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/zerotier-one.service)
+EndpointToService { endpoint: EndpointKey { protocol: Udp, addr: "<private-ipv4>", port: 9993 }, unit: "zerotier-one.service", scope: System }
+   confident=true evidence=CgroupUnitMatch(cgroup:/system.slice/zerotier-one.service)
+
+== errors (1) ==
+[permission_denied           ] permission denied for process info for some endpoints: 125/142 endpoints have no process association; PIDs for other users' processes require privilege

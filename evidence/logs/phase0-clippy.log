@@ -1,0 +1,32 @@
+# cargo clippy baseline — 2026-10-22T08:57:50+08:00
+
+===== portscope-core =====
+warning: doc list item overindented
+warning: useless use of `vec!`
+warning: irrefutable `if let` pattern
+warning: `portscope-core` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p portscope-core` to apply 1 suggestion)
+warning: `portscope-core` (lib test) generated 3 warnings (2 duplicates)
+
+===== portscope-cli =====
+warning: literal with an empty format string
+warning: matching on `Some` with `ok()` is redundant
+warning: `portscope-cli` (bin "portscope-cli") generated 2 warnings (run `cargo clippy --fix --bin "portscope-cli" -p portscope-cli` to apply 2 suggestions)
+warning: `portscope-cli` (bin "portscope-cli" test) generated 2 warnings (2 duplicates)
+
+===== portscope-gtk =====
+warning: checking if a string is ascii using iterators
+warning: `portscope-gtk` (lib test) generated 1 warning (run `cargo clippy --fix --lib -p portscope-gtk --tests` to apply 1 suggestion)
+warning: unused import: `gettextrs::gettext`
+warning: unused imports: `EN` and `ZH_CN`
+warning: unused variable: `u`
+warning: field `user` is never read
+warning: fields `split`, `details`, `search`, and `banner` are never read
+warning: field `error` is never read
+warning: using `Option.and_then(|x| Some(y))`, which is more succinctly expressed as `map(|x| y)`
+warning: using `Option.and_then(|x| Some(y))`, which is more succinctly expressed as `map(|x| y)`
+warning: using `Option.and_then(|x| Some(y))`, which is more succinctly expressed as `map(|x| y)`
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+warning: `portscope-gtk` (bin "portscope-gtk" test) generated 12 warnings (run `cargo clippy --fix --bin "portscope-gtk" -p portscope-gtk --tests` to apply 9 suggestions)
+warning: `portscope-gtk` (bin "portscope-gtk") generated 12 warnings (12 duplicates)

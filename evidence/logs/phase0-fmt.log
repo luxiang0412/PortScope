@@ -1,0 +1,130 @@
+# cargo fmt --check baseline — 2026-10-22T08:57:50+08:00
+
+===== portscope-core =====
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-core/examples/dbg.rs:1:
+ use portscope_core::model::UnitScope;
+ use portscope_core::services::{collect_services, Backend};
+[31m-fn main(){
+(B[m[31m-    let names: Vec<String> = ["ssh.service","cups.socket","docker.service","apparmor.service"]
+(B[m[31m-        .iter().map(|s| s.to_string()).collect();
+(B[m[32m+fn main() {
+(B[m[32m+    let names: Vec<String> = [
+(B[m[32m+        "ssh.service",
+(B[m[32m+        "cups.socket",
+(B[m[32m+        "docker.service",
+(B[m[32m+        "apparmor.service",
+(B[m[32m+    ]
+(B[m[32m+    .iter()
+(B[m[32m+    .map(|s| s.to_string())
+(B[m[32m+    .collect();
+(B[m     let (dbus, e) = collect_services(&[UnitScope::System], Some(&names), Backend::DBus);
+     println!("dbus: {} errors {}", dbus.len(), e.len());
+[31m-    for d in &dbus { println!("  {} active={} sub={} mainpid={:?} cg={:?}", d.id, d.active_state.as_str(), d.sub_state, d.main_pid, d.control_group); }
+(B[m[32m+    for d in &dbus {
+(B[m[32m+        println!(
+(B[m[32m+            "  {} active={} sub={} mainpid={:?} cg={:?}",
+(B[m[32m+            d.id,
+(B[m[32m+            d.active_state.as_str(),
+(B[m[32m+            d.sub_state,
+(B[m[32m+            d.main_pid,
+(B[m[32m+            d.control_group
+(B[m[32m+        );
+(B[m[32m+    }
+(B[m     let (cli, _) = collect_services(&[UnitScope::System], Some(&names), Backend::Systemctl);
+     println!("systemctl: {}", cli.len());
+[31m-    for c in &cli { println!("  {} active={} sub={} mainpid={:?}", c.id, c.active_state.as_str(), c.sub_state, c.main_pid); }
+(B[m[32m+    for c in &cli {
+(B[m[32m+        println!(
+(B[m[32m+            "  {} active={} sub={} mainpid={:?}",
+(B[m[32m+            c.id,
+(B[m[32m+            c.active_state.as_str(),
+(B[m[32m+            c.sub_state,
+(B[m[32m+            c.main_pid
+(B[m[32m+        );
+[fmt --check exit: 0]
+
+===== portscope-cli =====
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:43:
+             .associations
+             .iter()
+             .find_map(|a| match &a.kind {
+[31m-                AssociationKind::EndpointToProcess { endpoint, identity } if *endpoint == ep.key() => {
+(B[m[32m+                AssociationKind::EndpointToProcess { endpoint, identity }
+(B[m[32m+                    if *endpoint == ep.key() =>
+(B[m[32m+                {
+(B[m                     Some(identity.pid.to_string())
+                 }
+                 _ => None,
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:53:
+             .associations
+             .iter()
+             .find_map(|a| match &a.kind {
+[31m-                AssociationKind::EndpointToService { endpoint, unit, .. } if *endpoint == ep.key() => {
+(B[m[32m+                AssociationKind::EndpointToService { endpoint, unit, .. }
+(B[m[32m+                    if *endpoint == ep.key() =>
+(B[m[32m+                {
+(B[m                     Some(unit.clone())
+                 }
+                 _ => None,
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:81:
+             .iter()
+             .map(|e| format!("{:?}({})", e.kind, e.detail))
+             .collect();
+[31m-        println!("{:?}\n   confident={} evidence={}", a.kind, a.confident, kinds.join(" | "));
+(B[m[32m+        println!(
+(B[m[32m+            "{:?}\n   confident={} evidence={}",
+(B[m[32m+            a.kind,
+(B[m[32m+            a.confident,
+(B[m[32m+            kinds.join(" | ")
+(B[m[32m+        );
+(B[m     }
+ 
+     println!("\n== errors ({}) ==", snap.errors.len());
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-cli/src/main.rs:100:
+         Some("user") => UnitScope::User,
+         _ => UnitScope::System,
+     };
+[fmt --check exit: 0]
+
+===== portscope-gtk =====
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:356:
+             .find(|(name, v)| name == k && !v.trim().is_empty())
+             .map(|(_, v)| v.as_str())
+     };
+[31m-    let raw = get("LC_ALL").or_else(|| get("LC_MESSAGES")).or_else(|| get("LANG"));
+(B[m[32m+    let raw = get("LC_ALL")
+(B[m[32m+        .or_else(|| get("LC_MESSAGES"))
+(B[m[32m+        .or_else(|| get("LANG"));
+(B[m     lang_from_locale(raw.unwrap_or(""))
+ }
+ 
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:474:
+     use super::*;
+ 
+     fn env(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+[31m-        pairs.iter().map(|(a, b)| (a.to_string(), b.to_string())).collect()
+(B[m[32m+        pairs
+(B[m[32m+            .iter()
+(B[m[32m+            .map(|(a, b)| (a.to_string(), b.to_string()))
+(B[m[32m+            .collect()
+(B[m     }
+ 
+     #[test]
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:481:
+     fn system_default_from_lang_only() {
+[31m-        assert_eq!(LangSetting::System.resolve(&env(&[("LANG", "zh_CN.UTF-8")])), Lang::ZhCn);
+(B[m[31m-        assert_eq!(LangSetting::System.resolve(&env(&[("LANG", "en_US.UTF-8")])), Lang::En);
+(B[m[32m+        assert_eq!(
+(B[m[32m+            LangSetting::System.resolve(&env(&[("LANG", "zh_CN.UTF-8")])),
+(B[m[32m+            Lang::ZhCn
+(B[m[32m+        );
+(B[m[32m+        assert_eq!(
+(B[m[32m+            LangSetting::System.resolve(&env(&[("LANG", "en_US.UTF-8")])),
+(B[m[32m+            Lang::En
+(B[m[32m+        );
+(B[m     }
+ 
+     #[test]
+Diff in /home/luxiang/project/private/spike_verify/spikes/portscope-gtk/src/i18n.rs:487:
+     fn lc_all_overrides_lang() {
+[fmt --check exit: 0]

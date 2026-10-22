@@ -1,0 +1,18 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/lib.rs (spikes/portscope-gtk/target/debug/deps/portscope_gtk-654e047cc94cfa27)
+
+running 11 tests
+test i18n::tests::c_and_posix_mean_english ... ok
+test i18n::tests::field_lists_are_the_same_length_and_keys ... ok
+test i18n::tests::empty_vars_are_skipped ... ok
+test i18n::tests::lc_all_overrides_lang ... ok
+test i18n::tests::manual_choice_beats_system ... ok
+test i18n::tests::no_string_is_empty_in_either_language ... ok
+test i18n::tests::no_field_left_as_english_placeholder_in_chinese ... ok
+test i18n::tests::translations_actually_differ_where_expected ... ok
+test i18n::tests::raw_technical_values_are_never_localised ... ok
+test i18n::tests::system_default_from_lang_only ... ok
+test i18n::tests::zh_variants_handled_honestly ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,18 @@
+# Phase 0 environment + baseline re-verification
+# re-verified: 2026-10-22T08:57:37+08:00
+
+PRETTY_NAME=Ubuntu 24.04.5 LTS
+Kernel: 7.0.0-38-generic
+XDG_SESSION_TYPE=x11 (real desktop: x11 on :1)
+GNOME: GNOME Shell 46.0
+GTK: 4.14.5
+libadwaita: 1.5.0
+rustc: rustc 1.94.1 (e408947bf 2026-03-25)
+cargo: cargo 1.94.1 (29ea6fb6a 2026-03-24)
+ss: ss utility, iproute2-6.1.0
+systemd: systemd 255 (255.4-1ubuntu8.18)
+msgfmt: msgfmt (GNU gettext-tools) 0.21
+user: uid=1000(luxiang) gid=1000(luxiang) groups=1000(luxiang),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users),114(lpadmin),981(ollama),984(docker),993(kvm),1023(xdroid),1078(xdroid4),10091(xdroid3),101023(xdroid2)
+
+## Disk state of spike repo
+spikes/*/target had to be rebuilt (was absent / gitignored)
