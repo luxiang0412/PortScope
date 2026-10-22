@@ -26,9 +26,36 @@ systemd unit. That link needs:
 ## The blocking constraint: Flatpak always isolates the PID namespace
 
 `flatpak run` unshares the PID namespace, and this is **not user-controllable**:
-`--unshare` accepts only `network` and `ipc`, never `pid`. There is no metadata
-key to share the host PID namespace; only `--host` would, which is not sandboxing
-at all.
+
+- `--unshare` accepts only `network` and `ipc`, never `pid`.
+- `--parent-share-pids` exists but only shares the namespace with a **parent
+  Flatpak sandbox** (`--parent-pid`), not with the host. It is for nested
+  Flatpaks; it does not help here.
+- Giving the sandbox `--filesystem=host` or mount access to the host `/proc`
+  does **not** change the PID namespace either — see the controlled experiment
+  below.
+
+So there is no combination of permissions that both keeps a sandbox and gives
+PortScope the host PID namespace.
+
+### Controlled experiment: mount access is not enough
+
+```
+# No --unshare-pid (not what Flatpak does): host namespace, everything visible
+$ bwrap --dev-bind / / --proc /proc sh -c 'readlink /proc/self/ns/pid; ls /proc | grep -c "^[0-9]*$"'
+pid:[4026531836]      # host
+993
+
+# With --unshare-pid (what Flatpak always does)
+$ bwrap --unshare-pid --dev-bind / / --proc /proc \
+      sh -c 'readlink /proc/self/ns/pid; ls /proc | grep -c "^[0-9]*$"; ss -tulnpHe | grep -c "pid="'
+pid:[4026534183]      # a NEW namespace
+5
+0
+```
+
+Even binding the entire host filesystem into the sandbox, the PID namespace is
+still separate and `ss -p` yields no PIDs.
 
 ## Experiment
 
@@ -95,6 +122,21 @@ auditable D-Bus API that the sandboxed UI talks to). That is:
 
 It is therefore recorded as a possible future direction, **not** as a deferred
 task for v1.0.
+
+## Why not ship it anyway, as "experimental"?
+
+Shipping a Flatpak that lists ports but cannot name their owner would be worse
+than shipping nothing:
+
+- The UI would show *unknown owner* on nearly every row, which looks like a bug
+  in PortScope rather than a sandbox limitation.
+- Users would be told the app can do something it explicitly cannot, in the very
+  workflow the product is built around.
+- The permissions it would need (host `/proc`, `/sys`, network, system D-Bus)
+  are far broader than a user expects from "inspect my ports", so the install
+  prompt would misrepresent the app.
+
+An "experimental" label does not fix a feature that silently cannot work.
 
 ## Reproducing this evaluation
 
