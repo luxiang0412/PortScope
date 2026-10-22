@@ -68,6 +68,68 @@ jobs:
           done
           exit $fail
 
+  packages:
+    name: Build packages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-4-dev libadwaita-1-dev gettext build-essential \
+            rpm debhelper lintian desktop-file-utils appstream
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build .deb
+        run: ./scripts/build-deb.sh
+
+      - name: Lint .deb
+        run: |
+          # initial-upload-closes-no-bugs is expected: no upstream tracker yet.
+          lintian --tag-display-limit 0 dist/*.deb | tee /tmp/lintian.txt
+          if grep -E '^(E|W):' /tmp/lintian.txt | grep -v 'initial-upload-closes-no-bugs'; then
+            echo "::error::unexpected lintian findings"; exit 1
+          fi
+
+      - name: Build .rpm
+        run: ./scripts/build-rpm.sh
+
+      - name: .rpm contents sanity
+        run: |
+          rpm -qlp dist/*.rpm | grep -qx /usr/bin/portscope
+          rpm -qlp dist/*.rpm | grep -qx /usr/share/applications/io.github.portscope.app.desktop
+          rpm -qlp dist/*.rpm | grep -qx /usr/share/man/man1/portscope.1.gz
+
+      - name: Reproducibility (each format builds identically twice)
+        run: |
+          set -e
+          sha_deb1=$(sha256sum dist/*.deb | cut -d' ' -f1)
+          sha_rpm1=$(sha256sum dist/*.rpm | cut -d' ' -f1)
+          ./scripts/build-deb.sh >/dev/null
+          ./scripts/build-rpm.sh >/dev/null
+          sha_deb2=$(sha256sum dist/*.deb | cut -d' ' -f1)
+          sha_rpm2=$(sha256sum dist/*.rpm | cut -d' ' -f1)
+          [ "$sha_deb1" = "$sha_deb2" ] || { echo "::error::.deb not reproducible"; exit 1; }
+          [ "$sha_rpm1" = "$sha_rpm2" ] || { echo "::error::.rpm not reproducible"; exit 1; }
+
+      - name: Install .deb and run the installed binary
+        run: |
+          sudo dpkg -i dist/*.deb
+          portscope-cli snapshot | head -6
+          sudo dpkg -r portscope
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: |
+            dist/*.deb
+            dist/*.rpm
+          retention-days: 14
+
   packaging-metadata:
     name: Desktop entry, metainfo, licence
     runs-on: ubuntu-24.04
