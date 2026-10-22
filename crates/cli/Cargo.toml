@@ -1,0 +1,20 @@
+[package]
+name = "portscope-cli"
+description = "PortScope diagnostic CLI: reproducible snapshots, journal queries, backend comparison"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "portscope-cli"
+path = "src/main.rs"
+
+[dependencies]
+portscope-core = { path = "../core" }
+serde_json.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"

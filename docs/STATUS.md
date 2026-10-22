@@ -5,8 +5,8 @@
 > `PortScope-v1.0-Development-Taskbook.md` has been met with saved evidence.**
 > Unverified items are listed as unverified, never as done.
 
-Last updated: Phase 0 (repository audit & decision freeze) — **awaiting product
-owner approval before Phase 1 starts.**
+Last updated: Phase 1 (collection layer productionisation) — **awaiting product
+owner review before Phase 2 starts.**
 
 ---
 
@@ -14,8 +14,8 @@ owner approval before Phase 1 starts.**
 
 | Phase | State | Gate met? |
 | --- | --- | --- |
-| **Phase 0 — repo audit & decision freeze** | deliverables produced | **submitted for review** |
-| Phase 1 — collection layer productionisation | **not started** | — |
+| **Phase 0 — repo audit & decision freeze** | approved by product owner (LICENSE=MIT, edition 2024 approved, Debian 13 deferred) | **PASSED** |
+| **Phase 1 — collection layer productionisation** | implemented, 70 tests pass, fmt+clippy clean | **submitted for review** |
 | Phase 2 — GTK UI productionisation & layout fixes | **not started** | — |
 | Phase 3 — gettext i18n & settings | **not started** | — |
 | Phase 4 — diagnostics experience & privacy | **not started** | — |
@@ -23,6 +23,25 @@ owner approval before Phase 1 starts.**
 | Phase 6 — packaging, CI/CD, OSS release prep | **not started** | — |
 
 ---
+
+## Phase 1 result (this tree, now real code)
+
+| Check | Result | Log |
+| --- | --- | --- |
+| `cargo test --workspace -- --test-threads=1` | **56 unit + 14 integration = 70 passed, 0 failed, 0 skipped** | `phase1-tests.log` |
+| `cargo fmt --all --check` | **clean** (was failing in the Spike) | `phase1-fmt.log` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **clean** (was 13 warnings) | `phase1-clippy.log` |
+| live snapshot | 142 endpoints / 159 processes / 305 services / 321 associations, `degraded=true` | `phase1-live.log` |
+| timeout enforcement | `sleep 60` killed at **302 ms** | `phase1-tests.log` |
+| D-Bus vs systemctl | **40 agree / 0 disagree** | `phase1-live.log` |
+
+Defects closed in Phase 1: **P0-D1** (timeouts/cancel/output caps — implemented
+and verified), **P0-D5** (cgroup scope + D-Bus default), **P0-D6** (fmt/clippy).
+
+Defect opened in Phase 1: **P1-D1** — full D-Bus enumeration spawns one `busctl`
+per unit (~27 ms each), making a full snapshot take **7–8 s** instead of the
+Spike's 2.3 s. Correctness is unaffected and every call is bounded, but a 5 s
+auto-refresh cannot be serviced yet. See `DECISIONS.md` D-P1-2.
 
 ## What actually exists today
 
@@ -123,15 +142,20 @@ only by comparison tests.
 | gettext `.po` catalogue | **absent** | Spike used typed string tables; Phase 3 must produce `.po`. |
 | Packaging (`.deb`/`.rpm`), CI, LICENSE | **absent** | Phase 6. |
 | Command line in diagnostics export | **absent** | Phase 4 privacy work. |
-| Timeouts / cancellation / output caps | **absent** | P0-D1, Phase 1. |
+| ~~Timeouts / cancellation / output caps~~ | **DONE in Phase 1** | see `exec.rs` |
+| Full-collection latency (7–8 s) | **open, Phase 2** | P1-D1; blocks 5 s auto-refresh |
+| GUI real-data path | **absent** | P0-D4, Phase 2 |
+| 1024×600 layout | **broken** | P0-D2, Phase 2 |
 
 ---
 
 ## Next gate
 
-Phase 1 may begin **only after** the product owner approves:
+Phase 2 may begin **only after** the product owner approves Phase 1
+(`evidence/reports/PHASE1-REPORT.md`), and should acknowledge:
 
-1. The audit in `evidence/reports/PHASE0-AUDIT.md`.
-2. The decisions in `docs/DECISIONS.md` §D-P0-1…§D-P0-7 — in particular the
-   **LICENSE choice**, which this agent has deliberately not made.
-3. Acceptance that P0-D1 is fixed first inside Phase 1.
+1. **P1-D1** — the 7–8 s full-collection latency must be addressed early in
+   Phase 2, because the 5 s auto-refresh spec (§5.3) cannot be met without it.
+2. **P0-D2 / P0-D4** — the layout and real-data work is the core of Phase 2.
+3. **Debian 13 remains deferred** per owner instruction; it is still a formal
+   release gate and is recorded as **unverified**, not as passing.

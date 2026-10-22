@@ -37,6 +37,71 @@ and tests that pass on this machine.
 
 ---
 
+## A2. Phase 1 decisions (execution)
+
+### D-P1-1. Bounded subprocess executor is mandatory for every external call
+
+**Accepted, implemented.**
+
+`crates/core/src/exec.rs` provides `run_bounded` / `run_checked` with:
+
+- explicit argv only (no shell, ever);
+- a hard **timeout** (default 5 s; 15 s for journald), enforced by `try_wait`
+  polling, then `kill()` + `wait()` so no zombie is left;
+- a **cancellation token** (`Cancel`), checked on the same poll;
+- **output caps** on stdout and stderr, with the child killed on overflow.
+
+Verified live: a `sleep 60` child is terminated at **302 ms** and reported as
+`timeout`, not waited out (`evidence/logs/phase1-tests.log`).
+
+**Bug found while implementing:** the first version kept draining and discarding
+bytes after hitting the cap, so a runaway producer (`yes`) ran until the
+deadline and surfaced as `timeout` instead of `output_too_large`. The reader now
+raises a shared overflow flag and stops, and the poll loop kills the child. The
+test `oversized_stdout_is_capped_not_buffered` exists because it caught this.
+
+**Cost accepted:** `run_bounded` returns non-zero exits as *data*
+(`Output.exit`), not as errors, because `journalctl` exits 0 on permission
+denial, on `-- No entries --` and on malformed queries — the spike's key finding.
+
+### D-P1-2. `CollectOptions::backend` defaults to D-Bus — with a measured caveat
+
+**Accepted, implemented; performance caveat recorded as open.**
+
+Implemented per D-P0-4. Measured on this host:
+
+| Backend | Units | Time | Agreement |
+| --- | --- | --- | --- |
+| `systemctl` (batch listing) | 221 | 2.6–2.9 s | — |
+| D-Bus, 40 selected units | 40 | 0.86–1.13 s | **40 agree / 0 disagree** |
+
+**Caveat (new, open):** full D-Bus collection is *slower* than the Spike implies,
+because the D-Bus path spawns **one `busctl` process per unit per interface**
+(~27 ms measured per spawn; ~305 units × up to 2 interfaces ≈ 7–8 s total).
+The Spike's "D-Bus is 3× cheaper" comparison was against `systemctl` *for 40
+selected units*, not for a full enumeration. The claim was true for the
+comparison made and does not generalise to full collection.
+
+**Not a regression in correctness** — results are identical, and every call is
+now bounded. It is a real performance limit for Phase 2's auto-refresh (a 5 s
+interval cannot be serviced by an 8 s collection). Resolution options to be
+decided in Phase 2: cache unit properties per refresh cycle, issue one batched
+`busctl` `GetAll` per interface over the whole manager (`ListUnits` + a single
+call), or keep `systemctl` for enumeration and D-Bus for detail. Recorded as an
+open design item rather than papered over.
+
+### D-P1-3. `unit_cgroup_root` by scope (fixes P0-D5)
+
+**Accepted, implemented.** `/system.slice` for system units, `/user.slice` for
+user units, replacing the Spike's hardcoded `/system.slice/` for everything.
+
+### D-P1-4. Integration tests use `/proc/self/status`, not FFI
+
+**Accepted, implemented.** Edition 2024 forbids bare `extern` blocks
+(`extern` must be `unsafe`) and the crate sets `unsafe_code = "forbid"`, so the
+Spike's `geteuid` FFI shim was replaced with an effective-uid read from
+`/proc/self/status`. No `unsafe` anywhere in the workspace.
+
 ## B. New Phase 0 decisions
 
 ### D-P0-1. Production repository is this tree; Spike 01 stays where it is

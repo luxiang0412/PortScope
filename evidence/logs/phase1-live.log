@@ -1,0 +1,20 @@
+# Phase 1 live collection + performance — 2026-10-22T10:41:39+08:00
+# 注意：含本机私有网络信息，提交前已脱敏
+
+## snapshot (D-Bus 为主路径，Phase 1 修正后的默认值)
+== PortScope snapshot ==
+collected_at = Some(SystemTime { tv_sec: 1792636899, tv_nsec: 635177660 })
+duration_ms  = 7927.0
+endpoints    = 142
+processes    = 159
+services     = 305
+associations = 321
+degraded     = true
+
+
+## compare-backends
+== systemctl vs D-Bus: unit state agreement & cost ==
+systemctl: 221 units in 2909.1 ms
+dbus     : 40 units in 1130.0 ms (0 errors)
+active-state agreement: 40 agree / 0 disagree
+dbus errors: []

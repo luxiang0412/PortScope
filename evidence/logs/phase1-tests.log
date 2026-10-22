@@ -1,0 +1,97 @@
+   Compiling portscope-core v0.1.0 (/home/luxiang/project/private/PortScope/crates/core)
+   Compiling portscope-cli v0.1.0 (/home/luxiang/project/private/PortScope/crates/cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.53s
+     Running unittests src/main.rs (target/debug/deps/portscope_cli-8285788c1ea29aa0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/portscope_core-20024d5a3ecffcf3)
+
+running 56 tests
+test assoc::tests::cgroup_slice_without_unit_returns_none ... ok
+test assoc::tests::cgroup_to_unit_system ... ok
+test assoc::tests::cgroup_to_unit_user_slice_gives_leaf_scope_not_unit ... ok
+test assoc::tests::docker_scope_is_preserved_verbatim ... ok
+test assoc::tests::error_codes_are_stable ... ok
+test assoc::tests::evidence_ranking_puts_strongest_first_and_dedups ... ok
+test assoc::tests::inactive_socket_unit_does_not_grab_endpoint ... ok
+test assoc::tests::no_cgroup_means_no_unit_association_never_port_heuristic ... ok
+test assoc::tests::parse_listen_inet_variants ... ok
+test assoc::tests::pid_reuse_is_detectable_via_start_time ... ok
+test assoc::tests::protocol_matching_from_listen_value ... ok
+test assoc::tests::same_port_different_protocol_are_distinct_keys ... ok
+test assoc::tests::service_cgroup_yields_unit_association_without_pid ... ok
+test assoc::tests::socket_unit_resolves_to_triggered_service ... ok
+test assoc::tests::user_socket_unit_found_by_listen_when_cgroup_is_init_scope ... ok
+test assoc::tests::wildcard_matching_respects_family ... ok
+test endpoints::tests::header_line_is_skipped ... ok
+test endpoints::tests::malformed_line_reports_error_not_panic ... ok
+test endpoints::tests::parses_pid_from_users_field ... ok
+test endpoints::tests::parses_udp_unconn_with_interface_scope ... ok
+test endpoints::tests::parses_v4_listener_with_cgroup_no_pid ... ok
+test endpoints::tests::parses_v6_listener_brackets ... ok
+test endpoints::tests::proc_addr_decode_v4 ... ok
+test endpoints::tests::proc_addr_decode_v6_loopback ... ok
+test endpoints::tests::same_port_tcp_and_udp_coexist ... ok
+test endpoints::tests::unknown_state_preserved_not_dropped ... ok
+test endpoints::tests::unparsable_address_reports_error ... ok
+test endpoints::tests::users_field_multiple_pids_and_no_false_positives ... ok
+test exec::tests::cancellation_stops_run ... ok
+test exec::tests::captures_stdout_and_exit_zero ... ok
+test exec::tests::missing_binary_is_tool_missing ... ok
+test exec::tests::nonzero_exit_is_returned_not_raised ... ok
+test exec::tests::oversized_stdout_is_capped_not_buffered ... ok
+test exec::tests::run_checked_maps_failure_to_tool_failed ... ok
+test exec::tests::run_checked_passes_through_stdout ... ok
+test exec::tests::stderr_is_captured_for_diagnostics ... ok
+test exec::tests::timeout_kills_the_child ... ok
+test journal::tests::bounded_query_for_own_user_journal ... ok
+test journal::tests::max_entries_is_enforced ... ok
+test journal::tests::nonexistent_unit_gives_empty_not_error ... ok
+test journal::tests::priority_and_message_are_parsed ... ok
+test process::tests::cgroup_of_self_is_user_slice ... ok
+test process::tests::correct_expected_start_is_accepted ... ok
+test process::tests::inode_owner_detects_our_own_socket ... ok
+test process::tests::missing_cgroup_yields_empty_not_error ... ok
+test process::tests::nonexistent_pid_is_process_gone ... ok
+test process::tests::pid1_inspect_readable_without_root ... ok
+test process::tests::pids_in_cgroup_of_own_cgroup_contains_self ... ok
+test process::tests::self_inspection_works_as_normal_user ... ok
+test process::tests::stat_parsing_handles_parens_in_comm ... ok
+test process::tests::wrong_expected_start_detects_reuse ... ok
+test services::tests::dbus_escaping_matches_systemd ... ok
+test services::tests::nonexistent_unit_is_not_found_dbus ... ok
+test services::tests::nonexistent_unit_is_not_found_systemctl ... ok
+test services::tests::system_scope_lists_some_units ... ok
+test services::tests::user_scope_socket_units_have_trigger_info_when_active ... ok
+
+test result: ok. 56 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.69s
+
+     Running tests/integration.rs (target/debug/deps/integration-f5fbcc32bea1dfb6)
+
+running 14 tests
+test collection_is_repeatable ... ok
+test controlled_tcp_ipv4_listener_is_discovered_with_owner ... ok
+test controlled_tcp_ipv6_listener_is_discovered ... ok
+test controlled_udp_binding_is_discovered_as_unconn ... ok
+test failed_user_service_reports_failed_state ... ok
+test foreign_owned_socket_has_no_pid_but_has_uid_and_cgroup ... ok
+test multiple_listen_addresses_on_same_port_are_separate_rows ... ok
+test nonexistent_unit_is_distinguished_from_inactive_unit ... ok
+test parser_handles_ss_extended_field_order_independently ... ok
+test process_exit_is_reported_as_process_gone ... ok
+test same_port_number_on_tcp_and_udp_are_distinct_endpoints ... ok
+test socket_activation_links_socket_unit_to_service ... ok
+test stale_socket_row_vanishes_after_listener_drop ... ok
+test user_service_lifecycle_running_then_stopped ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.51s
+
+   Doc-tests portscope_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
