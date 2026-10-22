@@ -96,6 +96,8 @@ pub struct PortRow {
     pub state: EndpointState,
     pub local_addr: String,
     pub port: u16,
+    /// Address family, carried on the row so filtering needs no side channel.
+    pub ip_version: IpVersion,
     pub uid: Option<u32>,
     pub user: Option<String>,
     pub pid: Option<u32>,
@@ -291,6 +293,7 @@ pub fn build_rows(snap: &Snapshot) -> (Vec<PortRow>, Vec<ProcessRow>, Vec<Servic
             state: ep.state,
             local_addr: ep.display_addr(),
             port: ep.local_port,
+            ip_version: ep.ip_version,
             uid,
             user: proc_info.and_then(|p| p.user.clone()).or_else(|| {
                 // Fall back to the socket owner's name from the process list.
@@ -420,14 +423,15 @@ pub struct EndpointFilter {
 }
 
 impl EndpointFilter {
-    pub fn matches(&self, row: &PortRow, ipv6: bool) -> bool {
-        if let Some(p) = self.protocol {
-            if row.protocol != p {
-                return false;
-            }
+    pub fn matches(&self, row: &PortRow) -> bool {
+        if let Some(p) = self.protocol
+            && row.protocol != p
+        {
+            return false;
         }
         if let Some(v6) = self.ipv6_only {
-            if v6 != ipv6 {
+            let is_v6 = row.ip_version == IpVersion::V6;
+            if v6 != is_v6 {
                 return false;
             }
         }
@@ -435,6 +439,11 @@ impl EndpointFilter {
             return false;
         }
         true
+    }
+
+    /// True when any restriction is active (used to label the filter button).
+    pub fn is_active(&self) -> bool {
+        self.protocol.is_some() || self.ipv6_only.is_some() || self.unowned_only
     }
 }
 
@@ -454,6 +463,100 @@ pub fn matches_query(search_text: &str, query: &str) -> bool {
 pub enum SortDir {
     Asc,
     Desc,
+}
+
+impl SortDir {
+    pub fn flipped(self) -> Self {
+        match self {
+            SortDir::Asc => SortDir::Desc,
+            SortDir::Desc => SortDir::Asc,
+        }
+    }
+}
+
+/// Sortable columns of the Ports view.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PortSort {
+    Protocol,
+    Address,
+    Port,
+    State,
+    Process,
+    Pid,
+    User,
+    Unit,
+}
+
+/// Sort the ports list in place.
+///
+/// Ordering rules that matter for honesty:
+///  * missing values (`None`) sort **last** in both directions, because "unknown"
+///    is not "smallest" — burying unknowns at the end keeps them visible rather
+///    than pretending they are low values;
+///  * address comparison is numeric for IPv4 and falls back to text for IPv6, so
+///    9.x does not sort after 10.x.
+pub fn sort_ports(rows: &mut [PortRow], by: PortSort, dir: SortDir) {
+    rows.sort_by(|a, b| {
+        let ord = match by {
+            PortSort::Protocol => a.protocol.as_str().cmp(b.protocol.as_str()),
+            PortSort::Address => cmp_addr(&a.local_addr, &b.local_addr),
+            PortSort::Port => a.port.cmp(&b.port),
+            PortSort::State => a.state.label().cmp(&b.state.label()),
+            PortSort::Process => cmp_opt_str(a.process.as_deref(), b.process.as_deref()),
+            PortSort::Pid => cmp_opt_num(a.pid, b.pid),
+            PortSort::User => cmp_opt_str(a.user.as_deref(), b.user.as_deref()),
+            PortSort::Unit => cmp_opt_str(a.unit.as_deref(), b.unit.as_deref()),
+        };
+        match dir {
+            SortDir::Asc => ord,
+            SortDir::Desc => ord.reverse(),
+        }
+        // Stable tie-break so the order does not jitter between refreshes.
+        .then_with(|| a.port.cmp(&b.port))
+        .then_with(|| a.local_addr.cmp(&b.local_addr))
+    });
+    if dir == SortDir::Desc {
+        // Unknowns must stay last even when reversing: re-place them.
+        rows.sort_by(|a, b| {
+            let unknown = |r: &PortRow| match by {
+                PortSort::Process => r.process.is_none(),
+                PortSort::Pid => r.pid.is_none(),
+                PortSort::User => r.user.is_none() && r.uid.is_none(),
+                PortSort::Unit => r.unit.is_none(),
+                _ => false,
+            };
+            unknown(a).cmp(&unknown(b))
+        });
+    }
+}
+
+/// `None` sorts after `Some` regardless of direction.
+fn cmp_opt_str(a: Option<&str>, b: Option<&str>) -> std::cmp::Ordering {
+    match (a, b) {
+        (Some(x), Some(y)) => x.to_ascii_lowercase().cmp(&y.to_ascii_lowercase()),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    }
+}
+
+fn cmp_opt_num(a: Option<u32>, b: Option<u32>) -> std::cmp::Ordering {
+    match (a, b) {
+        (Some(x), Some(y)) => x.cmp(&y),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    }
+}
+
+/// Compare addresses numerically when both are IPv4, textually otherwise.
+fn cmp_addr(a: &str, b: &str) -> std::cmp::Ordering {
+    use std::net::IpAddr;
+    let parse = |s: &str| s.split('%').next().unwrap_or(s).parse::<IpAddr>().ok();
+    match (parse(a), parse(b)) {
+        (Some(x), Some(y)) => x.cmp(&y),
+        _ => a.cmp(b),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -735,6 +838,7 @@ mod tests {
             state: EndpointState::TcpListen,
             local_addr: "127.0.0.1".into(),
             port: 5432,
+            ip_version: IpVersion::V4,
             uid: Some(1000),
             user: Some("postgres".into()),
             pid: Some(1240),
@@ -766,6 +870,7 @@ mod tests {
             state: EndpointState::TcpListen,
             local_addr: "0.0.0.0".into(),
             port: 22,
+            ip_version: IpVersion::V4,
             uid: None,
             user: None,
             pid: None,
@@ -786,6 +891,7 @@ mod tests {
             state: EndpointState::TcpListen,
             local_addr: "0.0.0.0".into(),
             port: 22,
+            ip_version: IpVersion::V4,
             uid: None,
             user: None,
             pid: None,
@@ -800,14 +906,14 @@ mod tests {
             protocol: Some(Protocol::Udp),
             ..Default::default()
         };
-        assert!(!f.matches(&tcp4, false));
+        assert!(!f.matches(&tcp4));
         let f = EndpointFilter {
             ipv6_only: Some(true),
             ..Default::default()
         };
-        assert!(!f.matches(&tcp4, false));
+        assert!(!f.matches(&tcp4));
         let f = EndpointFilter::default();
-        assert!(f.matches(&tcp4, false));
+        assert!(f.matches(&tcp4));
     }
 
     #[test]
@@ -817,6 +923,7 @@ mod tests {
             state: EndpointState::TcpListen,
             local_addr: "0.0.0.0".into(),
             port: 22,
+            ip_version: IpVersion::V4,
             uid: None,
             user: None,
             pid: Some(1),
@@ -831,9 +938,9 @@ mod tests {
             unowned_only: true,
             ..Default::default()
         };
-        assert!(!f.matches(&row, false));
+        assert!(!f.matches(&row));
         row.pid = None;
-        assert!(f.matches(&row, false));
+        assert!(f.matches(&row));
     }
 
     #[test]
@@ -906,6 +1013,109 @@ mod tests {
             .iter()
             .position(|p| (p.protocol, p.local_addr.clone(), p.port) == key);
         assert!(found.is_none(), "a vanished endpoint must not re-resolve");
+    }
+
+    fn port_row(
+        proto: Protocol,
+        addr: &str,
+        port: u16,
+        pid: Option<u32>,
+        unit: Option<&str>,
+    ) -> PortRow {
+        PortRow {
+            protocol: proto,
+            state: EndpointState::TcpListen,
+            local_addr: addr.into(),
+            port,
+            ip_version: if addr.contains(':') {
+                IpVersion::V6
+            } else {
+                IpVersion::V4
+            },
+            uid: None,
+            user: None,
+            pid,
+            process: pid.map(|p| format!("p{p}")),
+            unit: unit.map(str::to_string),
+            degraded: pid.is_none(),
+            evidence_count: 0,
+            evidence: vec![],
+            identity: None,
+        }
+    }
+
+    #[test]
+    fn sort_by_port_is_numeric_and_stable() {
+        let mut rows = vec![
+            port_row(Protocol::Tcp, "0.0.0.0", 300, None, None),
+            port_row(Protocol::Tcp, "0.0.0.0", 22, None, None),
+            port_row(Protocol::Tcp, "0.0.0.0", 9000, None, None),
+        ];
+        sort_ports(&mut rows, PortSort::Port, SortDir::Asc);
+        assert_eq!(
+            rows.iter().map(|r| r.port).collect::<Vec<_>>(),
+            vec![22, 300, 9000]
+        );
+        sort_ports(&mut rows, PortSort::Port, SortDir::Desc);
+        assert_eq!(
+            rows.iter().map(|r| r.port).collect::<Vec<_>>(),
+            vec![9000, 300, 22]
+        );
+    }
+
+    #[test]
+    fn addresses_sort_numerically_not_lexically() {
+        // Lexical order would put 10.0.0.1 before 9.0.0.1; numeric must not.
+        let mut rows = vec![
+            port_row(Protocol::Tcp, "10.0.0.1", 1, None, None),
+            port_row(Protocol::Tcp, "9.0.0.1", 1, None, None),
+            port_row(Protocol::Tcp, "127.0.0.1", 1, None, None),
+        ];
+        sort_ports(&mut rows, PortSort::Address, SortDir::Asc);
+        assert_eq!(rows[0].local_addr, "9.0.0.1");
+        assert_eq!(rows[1].local_addr, "10.0.0.1");
+    }
+
+    #[test]
+    fn unknown_values_sort_last_in_both_directions() {
+        // "unknown" is not "smallest": it must stay visible at the end rather
+        // than masquerading as a low value.
+        for dir in [SortDir::Asc, SortDir::Desc] {
+            let mut rows = vec![
+                port_row(Protocol::Tcp, "0.0.0.0", 1, None, None),
+                port_row(Protocol::Tcp, "0.0.0.0", 2, Some(500), Some("b.service")),
+                port_row(Protocol::Tcp, "0.0.0.0", 3, Some(100), Some("a.service")),
+            ];
+            sort_ports(&mut rows, PortSort::Unit, dir);
+            assert!(
+                rows.last().unwrap().unit.is_none(),
+                "unknown unit must sort last with {dir:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn filter_reports_whether_any_restriction_is_active() {
+        assert!(!EndpointFilter::default().is_active());
+        assert!(
+            EndpointFilter {
+                protocol: Some(Protocol::Tcp),
+                ..Default::default()
+            }
+            .is_active()
+        );
+    }
+
+    #[test]
+    fn filter_by_family_uses_the_rows_own_version() {
+        let v6 = port_row(Protocol::Tcp, "::1", 22, None, None);
+        let v4 = port_row(Protocol::Tcp, "0.0.0.0", 22, None, None);
+        let only6 = EndpointFilter {
+            ipv6_only: Some(true),
+            ..Default::default()
+        };
+        assert!(only6.matches(&v6));
+        assert!(!only6.matches(&v4));
     }
 
     #[test]

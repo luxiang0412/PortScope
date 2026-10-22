@@ -27,7 +27,7 @@ use portscope_core::model::UnitScope;
 
 use crate::i18n::{Lang, LangSetting, Retranslatable, init_gettext, process_env, tr};
 use crate::logs::LogSource;
-use crate::state::{AppState, View};
+use crate::state::{AppState, EndpointFilter, PortSort, SortDir, View};
 use crate::worker::{Collector, Outcome, is_current};
 use crate::{APP_ID, APP_VERSION};
 
@@ -105,6 +105,9 @@ pub struct App {
     /// Newest requested collection generation; older results are discarded.
     pub generation: RefCell<u64>,
     pub search: RefCell<String>,
+    /// Active endpoint filter and sort, applied when the Ports list is refilled.
+    pub port_filter: RefCell<EndpointFilter>,
+    pub port_sort: RefCell<(PortSort, SortDir)>,
     pub view: RefCell<View>,
     pub narrow: RefCell<bool>,
     pub refresh_interval: RefCell<Option<u32>>,
@@ -145,6 +148,8 @@ impl App {
             log_generation: RefCell::new(0),
             generation: RefCell::new(0),
             search: RefCell::new(String::new()),
+            port_filter: RefCell::new(EndpointFilter::default()),
+            port_sort: RefCell::new((PortSort::Port, SortDir::Asc)),
             view: RefCell::new(View::Ports),
             narrow: RefCell::new(false),
             refresh_interval: RefCell::new(Some(5)),

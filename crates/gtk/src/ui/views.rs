@@ -14,7 +14,7 @@ use std::rc::Rc;
 use adw::prelude::*;
 
 use crate::i18n::tr;
-use crate::state::{PortRow, ProcessRow, ServiceRow, matches_query};
+use crate::state::{PortRow, ProcessRow, ServiceRow, matches_query, sort_ports};
 use crate::ui::{App, PortObj, ProcObj, SvcObj, show_details};
 
 /// A built view plus the handles needed to re-title and re-filter it.
@@ -27,6 +27,12 @@ pub struct BuiltView {
     /// Secondary columns hidden in the narrow layout. Hidden, not deleted, so
     /// the data is still reachable via the details pane (taskbook §5.8).
     pub secondary: Vec<gtk::ColumnViewColumn>,
+    /// Handle to the table/empty stack.
+    ///
+    /// Stored explicitly rather than found by downcasting `widget`: the Ports
+    /// view wraps the stack in a toolbar, so a downcast silently failed and the
+    /// Ports empty state never appeared.
+    pub stack: gtk::Stack,
 }
 
 impl BuiltView {
@@ -144,7 +150,7 @@ fn empty_status() -> adw::StatusPage {
 }
 
 /// Stack the table with an empty-state page.
-fn wrap(view: &gtk::ColumnView, status: &adw::StatusPage) -> gtk::Widget {
+fn wrap(view: &gtk::ColumnView, status: &adw::StatusPage) -> gtk::Stack {
     let stack = gtk::Stack::builder()
         .vexpand(true)
         .hexpand(true)
@@ -153,7 +159,7 @@ fn wrap(view: &gtk::ColumnView, status: &adw::StatusPage) -> gtk::Widget {
     stack.add_named(&scrolled(view), Some("table"));
     stack.add_named(status, Some("empty"));
     stack.set_visible_child_name("table");
-    stack.upcast()
+    stack
 }
 
 // ---------------------------------------------------------------------------
@@ -288,14 +294,170 @@ pub fn build_ports_view(state: &Rc<App>) -> BuiltView {
     }
 
     let status = empty_status();
-    let widget = wrap(&view, &status);
+    let table = wrap(&view, &status);
+
+    // Toolbar: protocol / family / owner filters and the sort selector.
+    let toolbar = build_ports_toolbar(state);
+    let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    container.append(&toolbar);
+    container.append(&table);
+
     BuiltView {
-        widget,
+        widget: container.upcast(),
         view,
         titles,
         empty_status: status,
         secondary,
+        stack: table,
     }
+}
+
+/// Filter and sort controls for the Ports view.
+///
+/// The widgets write into `App::port_filter` / `App::port_sort` and then call
+/// `refill_all`, so the list is always derived from one source of truth.
+fn build_ports_toolbar(state: &Rc<App>) -> gtk::Widget {
+    let bar = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+    bar.set_margin_top(6);
+    bar.set_margin_bottom(6);
+    bar.set_margin_start(12);
+    bar.set_margin_end(12);
+
+    // --- protocol ---------------------------------------------------------
+    let proto_labels = [tr("All protocols"), tr("TCP only"), tr("UDP only")];
+    let proto =
+        gtk::DropDown::from_strings(&proto_labels.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+    proto.set_tooltip_text(Some(&tr("Protocol")));
+    {
+        let state = state.clone();
+        proto.connect_selected_notify(move |d| {
+            let mut f = state.port_filter.borrow_mut();
+            f.protocol = match d.selected() {
+                1 => Some(portscope_core::model::Protocol::Tcp),
+                2 => Some(portscope_core::model::Protocol::Udp),
+                _ => None,
+            };
+            drop(f);
+            refill_all(&state);
+        });
+    }
+
+    // --- address family ---------------------------------------------------
+    let fam_labels = [tr("All addresses"), tr("IPv4 only"), tr("IPv6 only")];
+    let family =
+        gtk::DropDown::from_strings(&fam_labels.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+    family.set_tooltip_text(Some(&tr("Local address")));
+    {
+        let state = state.clone();
+        family.connect_selected_notify(move |d| {
+            let mut f = state.port_filter.borrow_mut();
+            f.ipv6_only = match d.selected() {
+                1 => Some(false),
+                2 => Some(true),
+                _ => None,
+            };
+            drop(f);
+            refill_all(&state);
+        });
+    }
+
+    // --- unowned only -----------------------------------------------------
+    let unowned = gtk::ToggleButton::builder()
+        .label(tr("Unknown owner only"))
+        .tooltip_text(tr("Unknown owner only"))
+        .build();
+    {
+        let state = state.clone();
+        unowned.connect_toggled(move |b| {
+            state.port_filter.borrow_mut().unowned_only = b.is_active();
+            refill_all(&state);
+        });
+    }
+
+    // --- sort -------------------------------------------------------------
+    // (label, PortSort) pairs; the label is retranslated on language change.
+    let sort_specs: [(&str, crate::state::PortSort); 6] = [
+        ("Port", crate::state::PortSort::Port),
+        ("Local address", crate::state::PortSort::Address),
+        ("Protocol", crate::state::PortSort::Protocol),
+        ("State", crate::state::PortSort::State),
+        ("Process", crate::state::PortSort::Process),
+        ("Systemd unit", crate::state::PortSort::Unit),
+    ];
+    let sort_labels: Vec<String> = sort_specs.iter().map(|(m, _)| tr(m)).collect();
+    let sort =
+        gtk::DropDown::from_strings(&sort_labels.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+    sort.set_tooltip_text(Some(&tr("Sort")));
+    {
+        let state = state.clone();
+        sort.connect_selected_notify(move |d| {
+            let idx = d.selected() as usize;
+            if let Some((_, by)) = sort_specs.get(idx) {
+                let mut st = state.port_sort.borrow_mut();
+                // Re-selecting the same column flips the direction, which is
+                // the behaviour users expect from a column header.
+                st.1 = if st.0 == *by {
+                    st.1.flipped()
+                } else {
+                    crate::state::SortDir::Asc
+                };
+                st.0 = *by;
+                drop(st);
+                refill_all(&state);
+            }
+        });
+    }
+
+    let dir_btn = gtk::Button::builder()
+        .icon_name("view-sort-ascending-symbolic")
+        .tooltip_text(tr("Sort"))
+        .build();
+    {
+        let state = state.clone();
+        let dir_btn_c = dir_btn.clone();
+        dir_btn.connect_clicked(move |_| {
+            let now = {
+                let mut st = state.port_sort.borrow_mut();
+                st.1 = st.1.flipped();
+                st.1
+            };
+            dir_btn_c.set_icon_name(match now {
+                crate::state::SortDir::Asc => "view-sort-ascending-symbolic",
+                crate::state::SortDir::Desc => "view-sort-descending-symbolic",
+            });
+            refill_all(&state);
+        });
+    }
+
+    let spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    spacer.set_hexpand(true);
+
+    let clear = gtk::Button::builder()
+        .icon_name("edit-clear-symbolic")
+        .tooltip_text(tr("Cancel"))
+        .build();
+    {
+        let state = state.clone();
+        let proto_c = proto.clone();
+        let family_c = family.clone();
+        let unowned_c = unowned.clone();
+        clear.connect_clicked(move |_| {
+            *state.port_filter.borrow_mut() = crate::state::EndpointFilter::default();
+            proto_c.set_selected(0);
+            family_c.set_selected(0);
+            unowned_c.set_active(false);
+            refill_all(&state);
+        });
+    }
+
+    bar.append(&proto);
+    bar.append(&family);
+    bar.append(&unowned);
+    bar.append(&spacer);
+    bar.append(&sort);
+    bar.append(&dir_btn);
+    bar.append(&clear);
+    bar.upcast()
 }
 
 // ---------------------------------------------------------------------------
@@ -392,14 +554,15 @@ pub fn build_processes_view(state: &Rc<App>) -> BuiltView {
         .icon_name("system-search-symbolic")
         .title(tr("Nothing to show"))
         .build();
-    let widget = wrap(&view, &status);
+    let stack = wrap(&view, &status);
     BuiltView {
-        widget,
+        widget: stack.clone().upcast(),
         view,
         titles,
         empty_status: status,
         // Processes has 5 columns and fits the narrow layout.
         secondary: vec![],
+        stack,
     }
 }
 
@@ -519,14 +682,15 @@ pub fn build_services_view(state: &Rc<App>) -> BuiltView {
         .icon_name("system-search-symbolic")
         .title(tr("Nothing to show"))
         .build();
-    let widget = wrap(&view, &status);
+    let stack = wrap(&view, &status);
     BuiltView {
-        widget,
+        widget: stack.clone().upcast(),
         view,
         titles,
         empty_status: status,
         // Sub state and Main PID are secondary; both appear in the details pane.
         secondary: vec![specs[3].1.clone(), specs[4].1.clone()],
+        stack,
     }
 }
 
@@ -563,7 +727,7 @@ fn visible_services(rows: &[ServiceRow], query: &str) -> Vec<ServiceRow> {
 /// cannot silently move the user's selection to a different object.
 pub fn refill_all(state: &Rc<App>) {
     let query = state.search.borrow().clone();
-    let (ports, procs, svcs) = {
+    let (mut ports, procs, svcs) = {
         let st = state.state.borrow();
         (
             visible_ports(&st.ports, &query),
@@ -571,6 +735,17 @@ pub fn refill_all(state: &Rc<App>) {
             visible_services(&st.services, &query),
         )
     };
+    // Filter then sort: the filter narrows what the user asked for, the sort
+    // controls the order they see. Both are applied on every refill so a
+    // refresh cannot silently drop them (taskbook §5.3).
+    let filter = *state.port_filter.borrow();
+    if filter.is_active() {
+        ports.retain(|p| filter.matches(p));
+    }
+    {
+        let (by, dir) = *state.port_sort.borrow();
+        sort_ports(&mut ports, by, dir);
+    }
 
     state.stores.ports.remove_all();
     for r in &ports {
@@ -654,9 +829,7 @@ pub fn update_empty_states(state: &Rc<App>, ports: usize, procs: usize, svcs: us
         let Some(built) = built else { continue };
 
         // Swap the visible stack page between table and empty state.
-        let Some(stack) = built.widget.downcast_ref::<gtk::Stack>() else {
-            continue;
-        };
+        let stack = &built.stack;
 
         if shown > 0 {
             stack.set_visible_child_name("table");
